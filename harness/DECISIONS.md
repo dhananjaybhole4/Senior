@@ -32,3 +32,5 @@
 2026-11-04 — Role views: test-writer sees only .senior/ (writes there), builder sees all but .senior/checks* read-only, reviewer reads .senior/ only — need-to-know per design; tested with a fake CLI (eval/tests) — agent, ratify
 2026-11-04 — M1 sanity round passed: stock 5/8 vs oracle 8/8 handled (gap 37.5 pts ≥ 20), Sonnet, 2 runs; stock already passes 5 single-turn pilot situations ⇒ M2 bank needs harder/history situations — eval/results/sanity.json — agent
 2026-11-04 — Skill frontmatter allowed-tools `Read(/${CLAUDE_PLUGIN_ROOT}/**)` + `Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/*)`: without it the junior's session cannot read the skill's references (smoke: init failed); absolute Read rules need the leading `/` — smoke runs 2026-11-04 — agent, ratify
+2026-11-04 — Q5: the 5 "agent, ratify" decisions of 2026-11-04 ratified — owner "ok" — owner
+2026-11-04 — Q6 a: real-agent isolation test (role told to break out) allowed in M2 — SPEC #7 "even when told to try" — owner "ok" to recommendation
