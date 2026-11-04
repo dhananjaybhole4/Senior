@@ -2,6 +2,7 @@
 name: senior
 description: Senior-engineer direction for a junior building a project with Claude Code. Use on /senior, or when continuing work in a project that has a .senior/ folder.
 argument-hint: "[run | check | update <what changed>]"
+allowed-tools: Read(/${CLAUDE_PLUGIN_ROOT}/**) Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/*)
 ---
 # Senior
 
