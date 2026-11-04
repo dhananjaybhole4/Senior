@@ -2,3 +2,4 @@ harness/_holdout_staging/
 harness/.logs/
 .venv/
 eval/data/
+eval/runs/
