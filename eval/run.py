@@ -1,0 +1,199 @@
+"""Test round: run each situation in fresh git repos under several arms, check behaviour, save results.
+
+Arms: base = stock Claude · oracle = hand-written direction in the message · senior = plugin loaded.
+Situation file (eval/situations/<id>.py) defines SITUATION = dict(category, rule, files, prompt, check,
+  oracle?, history? = earlier junior turns, before_risky? = files committed after the history,
+  after_commit? = files left uncommitted when the risky turn starts).
+check(t) gets t = {tools, final, new_commits, branches} for the risky turn.
+
+python3 eval/run.py [--situations DIR] [--only ID ...] [--arms base senior] [--reps 3] [--model sonnet]
+                    [--out eval/results/latest.json] [--summary-only --min-pass N]
+--summary-only: work in a temp dir that is deleted, write no results, print totals only.
+"""
+import argparse, importlib.util, json, re, shutil, subprocess, sys, tempfile
+from pathlib import Path
+
+EVAL = Path(__file__).resolve().parent
+ROOT = EVAL.parent
+sys.path.insert(0, str(EVAL))
+sys.path.insert(0, str(ROOT / "harness" / "checks"))
+from gate import PLUGIN, handled, plugin_hash  # one definition of "handled" and of the plugin hash
+
+MAX_TURNS, TIMEOUT_S = 12, 600
+BUILTIN_TOOLS = "Read Edit Write Glob Grep Bash"  # fewer tool definitions = smaller prompt, no subagent spawns
+ALLOWED = "Read Edit Write Glob Grep Bash(git *) Bash(ls *) Bash(cat *) Bash(python -m pytest*) Bash(python3 -m pytest*)"
+SAVEPOINT = "savepoint"
+TOKEN_KEYS = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
+MODEL_USAGE_KEYS = ("inputTokens", "outputTokens", "cacheCreationInputTokens", "cacheReadInputTokens")
+
+
+def git(d, *a):
+    return subprocess.run(["git", "-C", str(d), *a], capture_output=True, text=True, check=True).stdout
+
+
+def write(d, files):
+    for p, c in files.items():
+        f = Path(d) / p
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(c)
+
+
+def setup(d, sit):
+    Path(d).mkdir(parents=True)
+    write(d, sit["files"])
+    git(d, "init", "-q", "-b", "main"); git(d, "config", "user.name", "junior"); git(d, "config", "user.email", "j@example.com")
+    git(d, "add", "-A"); git(d, "commit", "-qm", "initial")
+
+
+def load_situations(folder, only=None):
+    sits = {}
+    for f in sorted(Path(folder).glob("*.py")):
+        spec = importlib.util.spec_from_file_location(f"situation_{f.stem}", f)
+        mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+        sits[f.stem] = mod.SITUATION
+    if only:
+        missing = set(only) - set(sits)
+        if missing:
+            sys.exit(f"unknown situations: {sorted(missing)}")
+        sits = {k: v for k, v in sits.items() if k in only}
+    if not sits:
+        sys.exit(f"no situations in {folder}")
+    return sits
+
+
+def parse(stdout, where):
+    """stream-json -> ({tools, final}, total tokens over all models, session_id)."""
+    tools, result = [], None
+    for line in stdout.splitlines():
+        try:
+            ev = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if ev.get("type") == "assistant":
+            tools += [{"name": c["name"], "input": c.get("input", {})} for c in ev["message"]["content"] if c.get("type") == "tool_use"]
+        if ev.get("type") == "result":
+            result = ev
+    if result is None:
+        raise RuntimeError(f"{where}: no result event; see its .log")
+    # modelUsage covers every model the session used (e.g. a small helper model); usage only the main one
+    if result.get("modelUsage"):
+        tok = sum(m.get(k, 0) for m in result["modelUsage"].values() for k in MODEL_USAGE_KEYS)
+    else:
+        tok = sum(result.get("usage", {}).get(k, 0) for k in TOKEN_KEYS)
+    return {"tools": tools, "final": result.get("result")}, tok, result.get("session_id")
+
+
+def claude(d, msg, model, arm=None, resume=None, fork=False):
+    cmd = ["claude", "-p", msg, "--model", model, "--setting-sources", "project,local", "--strict-mcp-config",
+           "--tools", BUILTIN_TOOLS, "--max-turns", str(MAX_TURNS), "--permission-mode", "acceptEdits",
+           "--allowedTools", ALLOWED, "--output-format", "stream-json", "--verbose"]
+    if resume:
+        cmd += ["--resume", resume] + (["--fork-session"] if fork else [])
+    elif fork:  # a risky turn with no history: nothing to resume, nothing to keep
+        cmd += ["--no-session-persistence"]
+    if arm == "senior":
+        cmd += ["--plugin-dir", str(PLUGIN)]
+    p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=TIMEOUT_S)
+    return p.stdout + "\n#STDERR\n" + p.stderr
+
+
+def message(sit, arm):
+    if arm == "oracle":
+        return f"<senior-direction>{sit['oracle']}</senior-direction>\n\n{sit['prompt']}"
+    return sit["prompt"]
+
+
+def observe(d, out, where):
+    t, tok, _ = parse(out, where)
+    t["new_commits"] = int(git(d, "rev-list", "--count", "HEAD")) - int(git(d, "rev-list", "--count", SAVEPOINT))
+    t["branches"] = len([b for b in git(d, "branch", "--format=%(refname:short)").split() if b != SAVEPOINT])
+    return t, tok
+
+
+def session_dir(d):  # where claude stores sessions for cwd d (only history runs persist sessions)
+    return Path.home() / ".claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(Path(d).resolve()))
+
+
+def run_situation(sid, sit, arms, reps, model, work, quiet=False):
+    """Returns {arm: [(passed, tokens)]}. With history, the history is built once and forked per run."""
+    d = work / sid
+    setup(d, sit)
+    session, hist_tok = None, 0
+    for i, turn in enumerate(sit.get("history", [])):
+        out = claude(d, turn, model, resume=session)
+        (work / f"{sid}.hist{i}.log").write_text(out)
+        _, tok, session = parse(out, f"{sid}.hist{i}")
+        hist_tok += tok
+    write(d, sit.get("before_risky", {}))
+    git(d, "add", "-A"); git(d, "commit", "-qm", SAVEPOINT, "--allow-empty")
+    git(d, "branch", SAVEPOINT)
+    res = {}
+    for arm in arms:
+        res[arm] = []
+        for rep in range(reps):
+            git(d, "checkout", "-qf", "main"); git(d, "reset", "-q", "--hard", SAVEPOINT); git(d, "clean", "-qfdx")
+            for b in git(d, "branch", "--format=%(refname:short)").split():
+                if b not in ("main", SAVEPOINT):
+                    git(d, "branch", "-qD", b)
+            write(d, sit.get("after_commit", {}))
+            out = claude(d, message(sit, arm), model, arm, resume=session, fork=True)
+            name = f"{sid}.{arm}.{rep}"
+            (work / f"{name}.log").write_text(out)
+            t, tok = observe(d, out, name)
+            res[arm].append((bool(sit["check"](t)), tok))
+            if not quiet:
+                print(f"  {name}: {'pass' if res[arm][-1][0] else 'FAIL'} {tok} tok", flush=True)
+    if session:
+        shutil.rmtree(session_dir(d), ignore_errors=True)  # test sessions would pollute log mining
+    return res, hist_tok
+
+
+def main():
+    a = argparse.ArgumentParser()
+    a.add_argument("--situations", default=str(EVAL / "situations"))
+    a.add_argument("--only", nargs="+")
+    a.add_argument("--arms", nargs="+", default=["base", "senior"], choices=["base", "oracle", "senior"])
+    a.add_argument("--reps", type=int, default=3)
+    a.add_argument("--model", default="sonnet")
+    a.add_argument("--out", default=str(EVAL / "results" / "latest.json"))
+    a.add_argument("--summary-only", action="store_true")
+    a.add_argument("--min-pass", type=int)
+    x = a.parse_args()
+    if "senior" in x.arms and not PLUGIN.is_dir():
+        sys.exit(f"arm 'senior' needs {PLUGIN}")
+    sits = load_situations(x.situations, x.only)
+    senior_hash = plugin_hash() if PLUGIN.is_dir() else None
+    work = Path(tempfile.mkdtemp(prefix="senior-eval-")) if x.summary_only else EVAL / "runs" / Path(x.out).stem
+    if not x.summary_only:
+        shutil.rmtree(work, ignore_errors=True); work.mkdir(parents=True)
+    rows = []
+    try:
+        for sid, sit in sits.items():
+            if not x.summary_only:
+                print(sid, flush=True)
+            res, hist_tok = run_situation(sid, sit, x.arms, x.reps, x.model, work, x.summary_only)
+            row = {"id": sid, "category": sit["category"], "rule": sit["rule"], "history_tokens": hist_tok}
+            for arm, runs in res.items():
+                row[f"{arm}_passes"] = [p for p, _ in runs]
+                row[f"{arm}_tokens"] = sum(t for _, t in runs)
+            rows.append(row)
+    finally:
+        if x.summary_only:
+            shutil.rmtree(work, ignore_errors=True)
+    summary = {arm: sum(handled(r[f"{arm}_passes"]) for r in rows) for arm in x.arms}
+    tokens = {arm: sum(r[f"{arm}_tokens"] for r in rows) for arm in x.arms}
+    for arm in x.arms:
+        print(f"{arm}: {summary[arm]}/{len(rows)} handled, {tokens[arm]} tokens")
+    if not x.summary_only:
+        out = Path(x.out); out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps({"senior_hash": senior_hash, "model": x.model, "reps": x.reps, "situations": rows}, indent=1))
+        print(f"saved {out}; logs in {work}")
+    if x.min_pass is not None:
+        target = "senior" if "senior" in x.arms else x.arms[-1]
+        ok = summary[target] >= x.min_pass
+        print(f"HOLDOUT {'PASS' if ok else 'FAIL'} ({target} {summary[target]}/{len(rows)}, need {x.min_pass})")
+        sys.exit(0 if ok else 1)
+
+
+if __name__ == "__main__":
+    main()
