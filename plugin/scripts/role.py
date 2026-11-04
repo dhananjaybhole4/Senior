@@ -25,17 +25,17 @@ def main():
     a.add_argument("--allow", default="Read Edit Write Glob Grep")
     x = a.parse_args()
     if not shutil.which("bwrap"):
-        sys.exit("FAIL: bubblewrap (bwrap) is not installed; roles cannot be isolated")
+        sys.exit("senior: bubblewrap (bwrap) is not installed; roles cannot be isolated")
     (H / "checks").mkdir(parents=True, exist_ok=True)
     (H / "checks.toml").touch()
     cmd = ["bwrap", "--dev-bind", "/", "/", *ROLES[x.role], "--chdir", str(ROOT), "--",
            "claude", "-p", x.task, "--output-format", "json", "--permission-mode", "acceptEdits",
            "--allowedTools", x.allow, "--no-session-persistence"]
-    p = subprocess.run(cmd, capture_output=True, text=True)
+    p = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL)
     try:
         r = json.loads(p.stdout)
     except json.JSONDecodeError:
-        sys.exit(f"FAIL: {x.role} gave no result (exit {p.returncode}): {p.stderr.strip()[-500:]}")
+        sys.exit(f"senior: {x.role} gave no result (exit {p.returncode}): {p.stderr.strip()[-500:]}")
     tok = sum(m.get(k, 0) for m in (r.get("modelUsage") or {}).values() for k in TOKEN_KEYS)
     with open(H / "usage.jsonl", "a") as f:
         f.write(json.dumps({"role": x.role, "tokens": tok}) + "\n")

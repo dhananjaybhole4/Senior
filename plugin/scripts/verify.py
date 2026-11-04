@@ -19,7 +19,7 @@ def fingerprint():
 
 def main():
     if not (H / "checks.toml").exists():
-        sys.exit("FAIL: no .senior/checks.toml; run /senior first")
+        sys.exit("senior: no .senior/checks.toml; run /senior first")
     if sys.argv[1:] == ["lock"]:
         LOCK.write_text(json.dumps({"fingerprint": fingerprint()}))
         print("locked"); return
