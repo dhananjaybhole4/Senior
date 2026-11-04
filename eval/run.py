@@ -93,7 +93,7 @@ def claude(d, msg, model, arm=None, resume=None, fork=False):
         cmd += ["--no-session-persistence"]
     if arm == "senior":
         cmd += ["--plugin-dir", str(PLUGIN)]
-    p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=TIMEOUT_S)
+    p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=TIMEOUT_S, stdin=subprocess.DEVNULL)
     return p.stdout + "\n#STDERR\n" + p.stderr
 
 
