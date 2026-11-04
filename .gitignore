@@ -3,3 +3,4 @@ harness/.logs/
 .venv/
 eval/data/
 eval/runs/
+__pycache__/
