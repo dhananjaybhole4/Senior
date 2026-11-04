@@ -14,7 +14,7 @@
 
 ## Open items
 - Dogfooding on in-vehicle-user-identification: HALTED by owner (2026-11-04) until further notice → test on made-up projects only.
-- SWE-chat licence and download (explore task).
+- SWE-chat licence/size: done (DECISIONS 2026-11-04); download waits on Q1.
 - Explore task: mine 2026 correction sources into a lesson bank — arXiv 2605.29442 (20,574 sessions, 7 misalignment forms), 2602.17037 (Wink taxonomy + self-intervention), 2603.05941; CLAUDE.md rule write-ups (anecdotal). Owner asked for this.
 
 ## Prefilled (decided before init, in session 9f3b28c8)

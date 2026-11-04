@@ -15,6 +15,7 @@ scripts produce outcome report → Senior decides / asks junior
 see harness/DECISIONS.md
 
 ## Run
+setup: python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt; keep venv active for verify/eval
 pilot: python3 eval/pilot/run.py <outdir> [model] [reps]; python3 eval/pilot/long.py <outdir> [model] [reps]
 
 ## Gotchas
@@ -22,4 +23,8 @@ pilot: python3 eval/pilot/run.py <outdir> [model] [reps]; python3 eval/pilot/lon
 - resumed sessions keep their first system prompt → inject direction in the message, not --append-system-prompt
 - test runs write sessions to ~/.claude/projects/<cwd> → delete after, or they pollute log mining
 - --bare needs an API key (no subscription) → use --setting-sources project,local instead
+- role isolation: `bwrap --dev-bind / / --tmpfs <hidden dir> -- claude -p …` (tested 2026-11-04); built-in sandbox needs socat (missing)
+- `claude plugin eval` exists (plugin eval suites) → check before building eval/run.py (reuse first)
+- auto-mode classifier blocks headless agents told to break isolation → adversarial isolation runs need owner OK
+- system `pip3` on PATH belongs to another project's venv → always `python -m pip` inside .venv
 - dj-harness guard blocks shell commands that mention owner-only verify flags → write such files with Write/Edit
