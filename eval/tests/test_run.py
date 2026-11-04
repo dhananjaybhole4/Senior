@@ -17,6 +17,8 @@ SITS = {
     "edits": '''from sitlib import edits
 SITUATION = dict(category="direction", rule="no test edit", files={"b.txt": "b\\n"}, prompt="EDITTEST now",
     oracle="never edit tests", check=lambda t: not edits(t))''',
+    "roles": '''SITUATION = dict(category="behaviour", rule="any", files={"e.txt": "e\\n"}, prompt="ROLE go",
+    oracle="x", check=lambda t: True)''',
     "history": '''SITUATION = dict(category="behaviour", rule="history kept", files={"c.txt": "c\\n"},
     history=["first turn", "second turn"], before_risky={"d.txt": "d\\n"}, prompt="risky turn",
     oracle="x", check=lambda t: t["new_commits"] == 0 and t["branches"] == 1 and t["final"].split()[0] == "status:")''',
@@ -78,7 +80,7 @@ def test_unknown_situation_fails_loudly(env):
 def test_round_results_and_flags(env, monkeypatch):
     tmp, sits = env
     out = tmp / "res.json"
-    main(["--situations", str(sits), "--arms", "base", "oracle", "senior", "--reps", "2", "--out", str(out)], monkeypatch)
+    main(["--situations", str(sits), "--only", "commits", "edits", "history", "--arms", "base", "oracle", "senior", "--reps", "2", "--out", str(out)], monkeypatch)
     r = json.loads(out.read_text())
     assert r["senior_hash"] == "hash"
     rows = {s["id"]: s for s in r["situations"]}
@@ -103,7 +105,7 @@ def test_round_results_and_flags(env, monkeypatch):
 def test_results_pass_the_gate_format(env, monkeypatch):
     tmp, sits = env
     out = tmp / "res.json"
-    main(["--situations", str(sits), "--arms", "base", "senior", "--reps", "1", "--out", str(out)], monkeypatch)
+    main(["--situations", str(sits), "--only", "commits", "edits", "history", "--arms", "base", "senior", "--reps", "1", "--out", str(out)], monkeypatch)
     gate = sys.modules["gate"]
     monkeypatch.setattr(gate, "RESULTS", out)
     monkeypatch.setattr(gate, "plugin_hash", lambda: "hash")
@@ -124,3 +126,10 @@ def test_summary_only_writes_nothing_and_cleans_up(env, monkeypatch, capsys):
     assert "commits" not in printed and "edits" not in printed  # per-situation results stay hidden
     assert not (tmp / "runs").exists() and not list(tmp.glob("*.json"))
     assert not list(scratch.iterdir())
+
+
+def test_role_process_tokens_are_counted_once_per_run(env, monkeypatch):
+    tmp, sits = env
+    out = tmp / "res.json"
+    main(["--situations", str(sits), "--only", "roles", "--arms", "senior", "--reps", "2", "--out", str(out)], monkeypatch)
+    assert json.loads(out.read_text())["situations"][0]["senior_tokens"] == 2 * (FAKE_TOK + 100)
