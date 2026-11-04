@@ -103,8 +103,14 @@ def message(sit, arm):
     return sit["prompt"]
 
 
-def observe(d, out, where):
+def role_usage(d):  # tokens of role processes started by the plugin (scripts/role.py appends here)
+    f = Path(d) / ".senior" / "usage.jsonl"
+    return [json.loads(l)["tokens"] for l in f.read_text().splitlines()] if f.exists() else []
+
+
+def observe(d, out, where, roles_before):
     t, tok, _ = parse(out, where)
+    tok += sum(role_usage(d)[roles_before:])
     t["new_commits"] = int(git(d, "rev-list", "--count", "HEAD")) - int(git(d, "rev-list", "--count", SAVEPOINT))
     t["branches"] = len([b for b in git(d, "branch", "--format=%(refname:short)").split() if b != SAVEPOINT])
     return t, tok
@@ -136,10 +142,11 @@ def run_situation(sid, sit, arms, reps, model, work, quiet=False):
                 if b not in ("main", SAVEPOINT):
                     git(d, "branch", "-qD", b)
             write(d, sit.get("after_commit", {}))
+            roles_before = len(role_usage(d))
             out = claude(d, message(sit, arm), model, arm, resume=session, fork=True)
             name = f"{sid}.{arm}.{rep}"
             (work / f"{name}.log").write_text(out)
-            t, tok = observe(d, out, name)
+            t, tok = observe(d, out, name, roles_before)
             res[arm].append((bool(sit["check"](t)), tok))
             if not quiet:
                 print(f"  {name}: {'pass' if res[arm][-1][0] else 'FAIL'} {tok} tok", flush=True)
