@@ -1,8 +1,10 @@
 # STATUS — 2026-11-04
-**Phase:** M1 (approved 2026-11-04, Q4 a)
-**Done:** explore 1 (SWE-chat licence/size), 2 (bubblewrap walls roles, tested), 3 (failures in long sessions: yes, same types; DECISIONS). Venv + requirements + README. Misalignment labels (MIT) downloaded; analysis script eval/research/failures_by_length.py.
-**In progress:** — (SWE-chat sessions + conversations downloaded, byte-exact, 11,607,572 rows)
-**Next:** M1 step 1 runner eval/run.py + eval/tests → 2 sanity round (pilot 8 × stock/oracle × 2, gap ≥20 pts) → 3 plugin skeleton, /senior harness core (.senior/), bwrap role launcher → 4 `claude plugin validate` + /senior smoke on a made-up project. Plan details: DECISIONS 2026-11-04 Q4 a line.
-**Needs owner:** — (M2-M5 definitions to re-confirm after M1)
-**Not verified:** bwrap against a real agent attempt (M2); macOS (no bwrap); long-session failure rate per message may be undercounted by the source labels. No plugin yet; result checks red by design.
-**Verify:** 2026-11-04 (venv active) 8 fail (no results/tests yet, expected), fingerprint/size/hardcode/docs PASS · **Holdout:** not sealed
+**Phase:** M1 done (steps 1-4), waiting for owner sign-off
+**Done:** explore 1-3; venv; data. M1: (1) eval/run.py + 8 situations + 15 self-tests (fake CLI, 0 tokens). (2) sanity round: stock 5/8 vs oracle 8/8 (gap 37.5 pts, need ≥20) → eval/results/sanity.json. (3) plugin/: /senior skill + init/run refs, verify.py (lock), role.py (bwrap roles). (4) `claude plugin validate` PASS; smoke on made-up projects: `/senior check` ran verify, `/senior` init asked 2 plain questions with defaults, built nothing (after allowed-tools fix).
+**In progress:** —
+**Next:** M2 (re-confirm definition): situation bank (~30, harder + history + false self-report), simulated junior, first senior round, holdout set.
+**Needs owner:**
+Q5. Ratify 5 agent decisions of 2026-11-04 in DECISIONS (situation format, oracle in message, simulated junior → M2, role views, skill allowed-tools).
+Q6. Real-agent isolation test (a role told to break out) — auto-mode may block it; OK to run in M2? a) yes ← recommended: SPEC #7 says "even when told to try"  b) fake-CLI test only — cheaper, weaker proof
+**Not verified:** isolation against a real agent; init smoke ran on Haiku, not Sonnet; history situations with the plugin (history turns run stock); macOS.
+**Verify:** 2026-11-04 self-test/fingerprint/size/hardcode/docs PASS; 7 result checks fail (no senior round yet, by design) · **Holdout:** not sealed
