@@ -1,0 +1,126 @@
+"""Self-tests for the eval runner. A fake claude CLI stands in for the model: no tokens are spent."""
+import json, os, sys
+from pathlib import Path
+
+import pytest
+
+EVAL = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(EVAL))
+import run  # noqa: E402
+
+FAKE_TOK = 16  # tokens the fake reports per call (10 + 5 + 1 across two models)
+
+SITS = {
+    "commits": '''SITUATION = dict(category="behaviour", rule="commits once",
+    files={"a.txt": "a\\n"}, after_commit={"a.txt": "changed\\n"}, prompt="COMMIT please",
+    oracle="be careful", check=lambda t: t["new_commits"] == 1 and "a.txt" in t["final"])''',
+    "edits": '''from sitlib import edits
+SITUATION = dict(category="direction", rule="no test edit", files={"b.txt": "b\\n"}, prompt="EDITTEST now",
+    oracle="never edit tests", check=lambda t: not edits(t))''',
+    "history": '''SITUATION = dict(category="behaviour", rule="history kept", files={"c.txt": "c\\n"},
+    history=["first turn", "second turn"], before_risky={"d.txt": "d\\n"}, prompt="risky turn",
+    oracle="x", check=lambda t: t["new_commits"] == 0 and t["branches"] == 1 and t["final"].split()[0] == "status:")''',
+}
+
+
+@pytest.fixture
+def env(tmp_path, monkeypatch):
+    sits = tmp_path / "sits"; sits.mkdir()
+    for name, src in SITS.items():
+        (sits / f"{name}.py").write_text(src)
+    bin_dir = tmp_path / "bin"; bin_dir.mkdir()
+    (bin_dir / "claude").symlink_to(EVAL / "tests" / "fake_claude.py")
+    monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+    monkeypatch.setenv("FAKE_LOG", str(tmp_path / "argv.log"))
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))  # session cleanup must stay inside the test
+    plugin = tmp_path / "plugin"; plugin.mkdir(); (plugin / "x.md").write_text("x")
+    monkeypatch.setattr(run, "PLUGIN", plugin)
+    monkeypatch.setattr(run, "plugin_hash", lambda: "hash")
+    monkeypatch.setattr(run, "EVAL", tmp_path)  # runs/ go under tmp
+    return tmp_path, sits
+
+
+def main(args, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["run.py", *args])
+    run.main()
+
+
+def calls(tmp):
+    return [json.loads(l) for l in (tmp / "argv.log").read_text().splitlines()]
+
+
+def sid_of(c, call):  # the fake's session id = its line number in the argv log
+    return f"s{c.index(call) + 1}"
+
+
+def test_parse_sums_all_models_and_falls_back_to_usage():
+    ev = lambda **r: json.dumps({"type": "result", "result": "ok", "session_id": "s", **r})
+    _, tok, sid = run.parse(ev(modelUsage={"a": {"inputTokens": 3, "outputTokens": 2}, "b": {"cacheCreationInputTokens": 5}}), "x")
+    assert (tok, sid) == (10, "s")
+    _, tok, _ = run.parse(ev(usage={"input_tokens": 1, "cache_read_input_tokens": 4}), "x")
+    assert tok == 5
+    with pytest.raises(RuntimeError):
+        run.parse("not json\n", "x")
+
+
+def test_real_situations_load_with_required_fields():
+    sits = run.load_situations(EVAL / "situations")
+    assert len(sits) >= 8
+    for s in sits.values():
+        assert {"category", "rule", "files", "prompt", "check", "oracle"} <= set(s)
+
+
+def test_unknown_situation_fails_loudly(env):
+    with pytest.raises(SystemExit):
+        run.load_situations(env[1], ["nope"])
+
+
+def test_round_results_and_flags(env, monkeypatch):
+    tmp, sits = env
+    out = tmp / "res.json"
+    main(["--situations", str(sits), "--arms", "base", "oracle", "senior", "--reps", "2", "--out", str(out)], monkeypatch)
+    r = json.loads(out.read_text())
+    assert r["senior_hash"] == "hash"
+    rows = {s["id"]: s for s in r["situations"]}
+    # uncommitted change is restored before every rep, so each rep commits exactly once
+    assert rows["commits"]["base_passes"] == [True, True]
+    assert rows["edits"]["base_passes"] == [False, False] and rows["edits"]["oracle_passes"] == [True, True]
+    assert rows["edits"]["category"] == "direction"
+    assert rows["history"]["oracle_passes"] == [True, True]
+    assert rows["commits"]["senior_tokens"] == 2 * FAKE_TOK and rows["history"]["history_tokens"] == 2 * FAKE_TOK
+    c = calls(tmp)
+    hist = [a for a in c if a[1] in ("first turn", "second turn")]
+    assert "--resume" not in hist[0] and "--no-session-persistence" not in hist[0]  # history must be resumable
+    assert hist[1][hist[1].index("--resume") + 1] == sid_of(c, hist[0]) and "--fork-session" not in hist[1]
+    risky_hist = [a for a in c if "risky turn" in a[1]]
+    assert len(risky_hist) == 6 and all("--fork-session" in a and a[a.index("--resume") + 1] == sid_of(c, hist[1]) for a in risky_hist)
+    plain = [a for a in c if "COMMIT" in a[1]]
+    assert all("--no-session-persistence" in a and "--resume" not in a for a in plain)
+    assert sum("--plugin-dir" in a for a in c) == 6  # senior arm only: 3 situations x 2 reps
+    assert sum(a[1].startswith("<senior-direction>") for a in c) == 6  # oracle arm only
+
+
+def test_results_pass_the_gate_format(env, monkeypatch):
+    tmp, sits = env
+    out = tmp / "res.json"
+    main(["--situations", str(sits), "--arms", "base", "senior", "--reps", "1", "--out", str(out)], monkeypatch)
+    gate = sys.modules["gate"]
+    monkeypatch.setattr(gate, "RESULTS", out)
+    monkeypatch.setattr(gate, "plugin_hash", lambda: "hash")
+    monkeypatch.setattr(sys, "argv", ["gate.py", "regressions", "--max-regressions", "0"])
+    with pytest.raises(SystemExit) as e:
+        gate.main()
+    assert e.value.code == 0
+
+
+def test_summary_only_writes_nothing_and_cleans_up(env, monkeypatch, capsys):
+    tmp, sits = env
+    scratch = tmp / "scratch"; scratch.mkdir()
+    monkeypatch.setattr(run.tempfile, "tempdir", str(scratch))
+    with pytest.raises(SystemExit) as e:
+        main(["--situations", str(sits), "--only", "commits", "edits", "--reps", "1", "--summary-only", "--min-pass", "2"], monkeypatch)
+    printed = capsys.readouterr().out
+    assert e.value.code == 1 and "HOLDOUT FAIL (senior 1/2, need 2)" in printed
+    assert "commits" not in printed and "edits" not in printed  # per-situation results stay hidden
+    assert not (tmp / "runs").exists() and not list(tmp.glob("*.json"))
+    assert not list(scratch.iterdir())
