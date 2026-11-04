@@ -1,0 +1,9 @@
+{
+ "locked_at": "2026-11-04T16:51:33",
+ "files": {
+  "harness/BOUNDARIES.md": "917cc6e762daf579ac955edc21e5e04da58a5e6c407bbc7e79a2b27d0dbd23b8",
+  "harness/SPEC.md": "774f7fa2f5bfd15d2a3671eccb5bd384ec0fcf1ff4b4dd4f2b3c90b81942398f",
+  "harness/checks/gate.py": "f203694e6f360ace0c84cb84713e544bff64187900095835af4ac816d1583b92",
+  "harness/checks.toml": "9f4c0c7d09500f92d66480d95153c49052daba9fa847097604e7c9469346fcd0"
+ }
+}

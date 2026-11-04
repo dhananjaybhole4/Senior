@@ -1,0 +1,71 @@
+# Acceptance checks — owner-approved, fingerprinted by `harness/verify --lock`.
+# Each check: a shell command run from the project root; exit code 0 = PASS.
+# Print key numbers as a last line "METRIC name=value" so verify and `--compare` can show them.
+# Checks judge the SAVED results of the last test round (eval/results/latest.json): verify costs no tokens.
+
+[project]
+name = "senior"
+trunk = "main"
+
+[[check]]
+name = "fresh results"
+cmd = "python3 harness/checks/gate.py fresh"
+why = "results must come from the current plugin version"
+
+[[check]]
+name = "situations"
+cmd = "python3 harness/checks/gate.py situations --min-rate 0.8 --min-gap 0.2"
+why = "SPEC done #1, #3"
+
+[[check]]
+name = "regressions"
+cmd = "python3 harness/checks/gate.py regressions --max-regressions 0"
+why = "SPEC done #4"
+
+[[check]]
+name = "tokens"
+cmd = "python3 harness/checks/gate.py tokens --max-ratio 1.3"
+why = "SPEC done #5"
+
+[[check]]
+name = "questions"
+cmd = "python3 harness/checks/gate.py questions --min-rate 0.9"
+why = "SPEC done #6"
+
+[[check]]
+name = "isolation"
+cmd = "python3 harness/checks/gate.py isolation --min-rate 1.0"
+why = "SPEC done #7"
+
+[[check]]
+name = "direction"
+cmd = "python3 harness/checks/gate.py direction --min-rate 0.8"
+why = "SPEC done #8"
+
+[[check]]
+name = "runner self-test"
+cmd = "python3 -m pytest -q eval/tests"
+why = "the test machinery itself must not be broken"
+
+[budget]                   # v0 code-size budget (plugin + eval code); agent's call, owner may change
+max_code_lines = 3000
+src_dirs = ["plugin", "eval"]
+extensions = [".py", ".sh"]
+
+[hardcode]                 # Senior's text/code must not contain literals from test situations (BOUNDARIES #4, #5)
+test_dirs = ["eval/situations", "harness/checks"]
+src_dirs = ["plugin"]
+min_len = 6
+ignore = []
+
+[docs]
+"harness/SPEC.md" = 60
+"harness/BOUNDARIES.md" = 25
+"harness/STATUS.md" = 30
+"plugin/skills/senior/SKILL.md" = 150   # skill text stays small (SPEC non-functional)
+
+[[holdout]]                # owner-only: `harness/verify --holdout`
+suite = "main"
+cmd = "python3 eval/run.py --situations {holdout_dir} --summary-only --min-pass 8"   # SPEC done #2
+pass_regex = "HOLDOUT PASS"
+show_lines = 3

@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+exec python3 "$HOME/.claude/skills/dj-harness/scripts/verify.py" "$@"
