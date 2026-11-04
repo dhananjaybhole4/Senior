@@ -1,0 +1,6 @@
+{
+  "name": "senior",
+  "version": "0.1.0",
+  "author": {"name": "dhananjaybhole4"},
+  "description": "Senior engineer direction for juniors on stock Claude Code: interviews you, keeps a project harness in .senior/, runs isolated roles, asks only questions that matter."
+}
