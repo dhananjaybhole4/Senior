@@ -19,7 +19,7 @@ see harness/DECISIONS.md
 
 ## Run
 setup: python3 -m venv .venv && .venv/bin/python -m pip install -r requirements.txt; keep venv active for verify/eval
-round: python3 eval/run.py [--only ID..] [--arms base senior] [--reps 3] [--out eval/results/latest.json]
+round: python3 eval/run.py [--only ID..] [--arms base senior] [--reps 3] [--out eval/results/latest.json] [--max-tokens N] [--resume]  (progress saved per situation to <out>.partial.json)
 sanity: python3 eval/run.py --arms base oracle --reps 2 --out eval/results/sanity.json
 self-test: python -m pytest -q eval/tests
 
@@ -33,7 +33,7 @@ self-test: python -m pytest -q eval/tests
 - auto-mode classifier blocks headless agents told to break isolation → adversarial isolation runs need owner OK
 - system `pip3` on PATH belongs to another project's venv → always `python -m pip` inside .venv
 - dj-harness guard blocks shell commands that mention owner-only verify flags → write such files with Write/Edit
-- history turns run without the plugin in every arm; senior arm loads it from the risky turn only
+- history built per group: stock (base+oracle) and senior (plugin from turn 1); arm tokens = its runs + its group history
 - bwrap tmpfs-hidden folders accept writes inside the sandbox but nothing reaches disk
 - plugin skill reading its own files needs allowed-tools Read(/${CLAUDE_PLUGIN_ROOT}/**) (absolute path rules start with //)
 - child `claude -p` without stdin=DEVNULL waits 3 s for stdin each call

@@ -35,3 +35,7 @@
 2026-11-04 — Q5: the 5 "agent, ratify" decisions of 2026-11-04 ratified — owner "ok" — owner
 2026-11-04 — Q6 a: real-agent isolation test (role told to break out) allowed in M2 — SPEC #7 "even when told to try" — owner "ok" to recommendation
 2026-11-05 — M2 plan approved: D1 done = full round with real numbers for situations/regressions/tokens/questions/isolation (passing = M3, direction = M3); D2 sources = owner corrections (local) + public-data failure types + agent-written, half with history; D3 a keep stock-failing + 5 easy guards (holdout is the honest score); D5 holdout by a separate process, owner seals; D6 b Senior loaded from the first history turn; D7 budget ≈13M tokens (≤6 half rounds + 1 full); D8 owner spot-checks 5 judge verdicts after round 1 — owner
+2026-11-05 — Q8 a: SPEC #6 = question "could change the plan" (some answer leads to different work), not "changes" — a confirmed default is still a good question — owner
+2026-11-05 — Q9 a: Haiku plays the simulated junior and the question judge; owner spot-check (D8) guards the judge — owner
+2026-11-05 — Q10 a: M2 starts with ≤1 session internet research on AI coding-agent failure types → coverage table (type → situation → gaps) for the owner — owner
+2026-11-05 — Agent-to-agent messages (role tasks, reports) in short structured form; junior-facing text stays plain; kept only if a with/without test shows equal results and fewer tokens — owner idea, agent, ratify

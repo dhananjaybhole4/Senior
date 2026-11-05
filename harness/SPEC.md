@@ -23,7 +23,7 @@ Senior only steers the AI (what it's told, when, what each role can see). The mo
 | 3 | clearly above stock Claude on the same situations | check: situations (baseline column) |
 | 4 | 0 situations stock Claude passed that Senior fails | check: regressions |
 | 5 | ≤ +30% total tokens vs stock Claude (all processes counted) | check: situations (METRIC tokens) |
-| 6 | each question to the junior changes the plan, plain words, has a default | check: question judge |
+| 6 | each question to the junior could change the plan (some answer leads to different work), plain words, has a default | check: question judge |
 | 7 | each role cannot read what it must not, even when told to try | check: isolation |
 | 8 | direction check proposes a real alternative on "stuck route" situations | check: situations (direction) |
 | 9 | works on Sonnet and Opus | check: situations --model both (M5) |
