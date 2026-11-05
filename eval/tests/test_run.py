@@ -89,17 +89,42 @@ def test_round_results_and_flags(env, monkeypatch):
     assert rows["edits"]["base_passes"] == [False, False] and rows["edits"]["oracle_passes"] == [True, True]
     assert rows["edits"]["category"] == "direction"
     assert rows["history"]["oracle_passes"] == [True, True]
-    assert rows["commits"]["senior_tokens"] == 2 * FAKE_TOK and rows["history"]["history_tokens"] == 2 * FAKE_TOK
+    assert rows["commits"]["senior_tokens"] == 2 * FAKE_TOK  # no history: runs only
+    h = rows["history"]
+    assert h["history_tokens"] == {"stock": 2 * FAKE_TOK, "senior": 2 * FAKE_TOK}
+    assert h["base_tokens"] == h["senior_tokens"] == 4 * FAKE_TOK  # 2 history turns + 2 runs each
     c = calls(tmp)
     hist = [a for a in c if a[1] in ("first turn", "second turn")]
-    assert "--resume" not in hist[0] and "--no-session-persistence" not in hist[0]  # history must be resumable
-    assert hist[1][hist[1].index("--resume") + 1] == sid_of(c, hist[0]) and "--fork-session" not in hist[1]
-    risky_hist = [a for a in c if "risky turn" in a[1]]
-    assert len(risky_hist) == 6 and all("--fork-session" in a and a[a.index("--resume") + 1] == sid_of(c, hist[1]) for a in risky_hist)
+    stock, senior = [a for a in hist if "--plugin-dir" not in a], [a for a in hist if "--plugin-dir" in a]
+    assert len(stock) == len(senior) == 2  # Senior is loaded from the first history turn (D6 b)
+    for first, second in (stock, senior):
+        assert "--resume" not in first and "--no-session-persistence" not in first  # history must be resumable
+        assert second[second.index("--resume") + 1] == sid_of(c, first) and "--fork-session" not in second
+    risky = [a for a in c if "risky turn" in a[1]]
+    assert len(risky) == 6 and all("--fork-session" in a for a in risky)
+    for a in risky:
+        assert a[a.index("--resume") + 1] == sid_of(c, (senior if "--plugin-dir" in a else stock)[1])
     plain = [a for a in c if "COMMIT" in a[1]]
     assert all("--no-session-persistence" in a and "--resume" not in a for a in plain)
-    assert sum("--plugin-dir" in a for a in c) == 6  # senior arm only: 3 situations x 2 reps
+    assert sum("--plugin-dir" in a for a in c) == 8  # senior arm: 3 situations x 2 runs + 2 history turns
     assert sum(a[1].startswith("<senior-direction>") for a in c) == 6  # oracle arm only
+
+
+def test_token_limit_stops_and_resume_finishes(env, monkeypatch):
+    tmp, sits = env
+    out = tmp / "res.json"
+    args = ["--situations", str(sits), "--only", "commits", "edits", "--arms", "base", "--reps", "1", "--out", str(out)]
+    with pytest.raises(SystemExit) as e:
+        main(args + ["--max-tokens", "1"], monkeypatch)  # first situation goes past the limit
+    assert e.value.code == 2 and not out.exists()
+    saved = json.loads(out.with_suffix(".partial.json").read_text())
+    assert [r["id"] for r in saved["situations"]] == ["commits"]
+    with pytest.raises(SystemExit):
+        main(args + ["--resume", "--reps", "2"], monkeypatch)  # different settings must not mix
+    main(args + ["--resume"], monkeypatch)
+    assert [r["id"] for r in json.loads(out.read_text())["situations"]] == ["commits", "edits"]
+    assert not out.with_suffix(".partial.json").exists()
+    assert sum("COMMIT" in a[1] for a in calls(tmp)) == 1  # finished situation was not rerun
 
 
 def test_results_pass_the_gate_format(env, monkeypatch):
