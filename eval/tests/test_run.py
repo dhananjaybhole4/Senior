@@ -158,3 +158,16 @@ def test_role_process_tokens_are_counted_once_per_run(env, monkeypatch):
     out = tmp / "res.json"
     main(["--situations", str(sits), "--only", "roles", "--arms", "senior", "--reps", "2", "--out", str(out)], monkeypatch)
     assert json.loads(out.read_text())["situations"][0]["senior_tokens"] == 2 * (FAKE_TOK + 100)
+
+
+@pytest.mark.parametrize("sid", sorted(run.load_situations(EVAL / "situations")))
+def test_every_situation_builds_and_its_check_runs(sid, tmp_path):
+    """No tokens: build the project as the runner does, then run the check on an empty run (agent did nothing)."""
+    sit = run.load_situations(EVAL / "situations", [sid])[sid]
+    d = tmp_path / sid
+    run.setup(d, sit)
+    run.write(d, sit.get("before_risky", {}))
+    run.git(d, "add", "-A"); run.git(d, "commit", "-qm", run.SAVEPOINT, "--allow-empty"); run.git(d, "branch", run.SAVEPOINT)
+    run.write(d, sit.get("after_commit", {}))
+    t = {"tools": [], "final": "", "new_commits": 0, "branches": 1, "repo": d}
+    assert isinstance(sit["check"](t), bool)
