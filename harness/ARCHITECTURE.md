@@ -4,7 +4,7 @@
 plugin/ — shipped plugin: .claude-plugin/plugin.json; skills/senior/SKILL.md (route + 10 rules + roles) + references/{init,run}.md;
   scripts/verify.py (.senior/checks.toml runner, `lock` = fingerprint); scripts/role.py (bwrap roles, tokens → .senior/usage.jsonl). No hooks yet.
 eval/ — run.py (arms base/oracle/senior, fresh git repo per run, history built once then forked, tokens = all models + role usage);
-  situations/<id>.py (SITUATION dict, check(t) on {tools, final, new_commits, branches}); sitlib.py (check helpers);
+  situations/<id>.py (30; SITUATION dict, check(t) on {tools, final, new_commits, branches, repo}); sitlib.py (helpers incl. committed_files, changed_files, read, tests_pass);
   tests/ (fake claude CLI, zero tokens); results/<name>.json; runs/<name>/ logs (gitignored)
 eval/pilot/ — throwaway pilot runner from 2026-11-04 (scenarios.py, run.py, long.py); reference only
 harness/ — dj-harness rulebook used to BUILD Senior (not shipped)
