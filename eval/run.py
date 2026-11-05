@@ -22,6 +22,7 @@ sys.path.insert(0, str(EVAL))
 sys.path.insert(0, str(ROOT / "harness" / "checks"))
 from gate import PLUGIN, handled, plugin_hash  # one definition of "handled" and of the plugin hash
 from sitlib import SAVEPOINT
+from judge import judge
 
 MAX_TURNS, TIMEOUT_S = 12, 600
 BUILTIN_TOOLS = "Read Edit Write Glob Grep Bash"  # fewer tool definitions = smaller prompt, no subagent spawns
@@ -147,7 +148,7 @@ def group_of(arm):
 def run_situation(sid, sit, arms, reps, model, work, quiet=False):
     """Returns ({arm: [(passed, tokens)]}, {group: history tokens}). History is built once per group
     (stock: base + oracle, senior: plugin loaded) and forked for every run of that group."""
-    res, hist = {}, {}
+    res, hist, questions, judge_tok = {}, {}, [], 0
     for arm in arms:
         d = work / sid / group_of(arm)
         if group_of(arm) not in hist:
@@ -166,11 +167,14 @@ def run_situation(sid, sit, arms, reps, model, work, quiet=False):
             (work / f"{name}.log").write_text(out)
             t, tok = observe(d, out, name, roles_before)
             res[arm].append((bool(sit["check"](t)), tok))
+            if arm == "senior" and "?" in (t["final"] or ""):  # SPEC #6 grades Senior's questions only
+                verdicts, jt = judge(sit["prompt"], t["final"], d)
+                questions += [{"run": name, **v} for v in verdicts]; judge_tok += jt
             if not quiet:
                 print(f"  {name}: {'pass' if res[arm][-1][0] else 'FAIL'} {tok} tok", flush=True)
     for group in hist:
         shutil.rmtree(session_dir(work / sid / group), ignore_errors=True)  # test sessions would pollute log mining
-    return res, {g: tok for g, (_, tok) in hist.items()}
+    return res, {g: tok for g, (_, tok) in hist.items()}, questions, judge_tok
 
 
 def main():
@@ -216,14 +220,15 @@ def main():
                 sys.exit(2)
             if not x.summary_only:
                 print(sid, flush=True)
-            res, hist = run_situation(sid, sit, x.arms, x.reps, x.model, work, x.summary_only)
+            res, hist, questions, judge_tok = run_situation(sid, sit, x.arms, x.reps, x.model, work, x.summary_only)
             # an arm's tokens = its risky-turn runs + its group's history (all processes counted, SPEC #5)
-            row = {"id": sid, "category": sit["category"], "rule": sit["rule"], "history_tokens": hist}
+            row = {"id": sid, "category": sit["category"], "rule": sit["rule"], "history_tokens": hist,
+                   "judge_tokens": judge_tok, "questions": questions}
             for arm, runs in res.items():
                 row[f"{arm}_passes"] = [p for p, _ in runs]
                 row[f"{arm}_tokens"] = sum(t for _, t in runs) + hist[group_of(arm)]
             rows.append(row)
-            used += sum(hist.values()) + sum(t for runs in res.values() for _, t in runs)
+            used += sum(hist.values()) + judge_tok + sum(t for runs in res.values() for _, t in runs)
             if not x.summary_only:
                 partial.write_text(json.dumps({**header, "situations": rows}, indent=1))
     finally:
@@ -234,7 +239,11 @@ def main():
     for arm in x.arms:
         print(f"{arm}: {summary[arm]}/{len(rows)} handled, {tokens[arm]} tokens")
     if not x.summary_only:
-        out.write_text(json.dumps({**header, "situations": rows}, indent=1))
+        final = {**header, "situations": rows}
+        if "senior" in x.arms:  # gate input for SPEC #6; per-question verdicts stay in each row
+            qs = [q for r in rows for q in r["questions"]]
+            final["questions"] = {"total": len(qs), "good": sum(q["good"] for q in qs)}
+        out.write_text(json.dumps(final, indent=1))
         partial.unlink()
         print(f"saved {out}; logs in {work}")
     if x.min_pass is not None:
