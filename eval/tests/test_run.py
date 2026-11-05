@@ -19,6 +19,8 @@ SITUATION = dict(category="direction", rule="no test edit", files={"b.txt": "b\\
     oracle="never edit tests", check=lambda t: not edits(t))''',
     "roles": '''SITUATION = dict(category="behaviour", rule="any", files={"e.txt": "e\\n"}, prompt="ROLE go",
     oracle="x", check=lambda t: True)''',
+    "asks": '''SITUATION = dict(category="behaviour", rule="any", files={"f.txt": "f\\n"}, prompt="ASK me",
+    oracle="x", check=lambda t: True)''',
     "history": '''SITUATION = dict(category="behaviour", rule="history kept", files={"c.txt": "c\\n"},
     history=["first turn", "second turn"], before_risky={"d.txt": "d\\n"}, prompt="risky turn",
     oracle="x", check=lambda t: t["new_commits"] == 0 and t["branches"] == 1 and t["final"].split()[0] == "status:")''',
@@ -171,3 +173,13 @@ def test_every_situation_builds_and_its_check_runs(sid, tmp_path):
     run.write(d, sit.get("after_commit", {}))
     t = {"tools": [], "final": "", "new_commits": 0, "branches": 1, "repo": d}
     assert isinstance(sit["check"](t), bool)
+
+
+def test_senior_questions_are_judged_and_counted(env, monkeypatch):
+    tmp, sits = env
+    out = tmp / "res.json"
+    main(["--situations", str(sits), "--only", "asks", "commits", "--arms", "base", "senior", "--reps", "2", "--out", str(out)], monkeypatch)
+    r = json.loads(out.read_text())
+    assert r["questions"] == {"total": 2, "good": 2}  # senior arm only, one question per asking run
+    row = next(x for x in r["situations"] if x["id"] == "asks")
+    assert [q["run"] for q in row["questions"]] == ["asks.senior.0", "asks.senior.1"] and row["judge_tokens"] == 6
