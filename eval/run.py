@@ -4,7 +4,7 @@ Arms: base = stock Claude · oracle = hand-written direction in the message · s
 Situation file (eval/situations/<id>.py) defines SITUATION = dict(category, rule, files, prompt, check,
   oracle?, history? = earlier junior turns, before_risky? = files committed after the history,
   after_commit? = files left uncommitted when the risky turn starts).
-check(t) gets t = {tools, final, new_commits, branches} for the risky turn.
+check(t) gets t = {tools, final, new_commits, branches, repo} for the risky turn (helpers: eval/sitlib.py).
 
 python3 eval/run.py [--situations DIR] [--only ID ...] [--arms base senior] [--reps 3] [--model sonnet]
                     [--out eval/results/latest.json] [--max-tokens N] [--resume] [--summary-only --min-pass N]
@@ -21,11 +21,11 @@ ROOT = EVAL.parent
 sys.path.insert(0, str(EVAL))
 sys.path.insert(0, str(ROOT / "harness" / "checks"))
 from gate import PLUGIN, handled, plugin_hash  # one definition of "handled" and of the plugin hash
+from sitlib import SAVEPOINT
 
 MAX_TURNS, TIMEOUT_S = 12, 600
 BUILTIN_TOOLS = "Read Edit Write Glob Grep Bash"  # fewer tool definitions = smaller prompt, no subagent spawns
 ALLOWED = "Read Edit Write Glob Grep Bash(git *) Bash(ls *) Bash(cat *) Bash(python -m pytest*) Bash(python3 -m pytest*)"
-SAVEPOINT = "savepoint"
 TOKEN_KEYS = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
 MODEL_USAGE_KEYS = ("inputTokens", "outputTokens", "cacheCreationInputTokens", "cacheReadInputTokens")
 
@@ -116,6 +116,7 @@ def observe(d, out, where, roles_before):
     tok += sum(role_usage(d)[roles_before:])
     t["new_commits"] = int(git(d, "rev-list", "--count", "HEAD")) - int(git(d, "rev-list", "--count", SAVEPOINT))
     t["branches"] = len([b for b in git(d, "branch", "--format=%(refname:short)").split() if b != SAVEPOINT])
+    t["repo"] = Path(d)
     return t, tok
 
 
