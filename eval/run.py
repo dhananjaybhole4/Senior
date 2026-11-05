@@ -7,7 +7,10 @@ Situation file (eval/situations/<id>.py) defines SITUATION = dict(category, rule
 check(t) gets t = {tools, final, new_commits, branches} for the risky turn.
 
 python3 eval/run.py [--situations DIR] [--only ID ...] [--arms base senior] [--reps 3] [--model sonnet]
-                    [--out eval/results/latest.json] [--summary-only --min-pass N]
+                    [--out eval/results/latest.json] [--max-tokens N] [--resume] [--summary-only --min-pass N]
+Progress is saved to <out>.partial.json after every situation; stopping (Ctrl+C, kill, --max-tokens) keeps it.
+--resume: continue a stopped round with the same settings, skipping situations already done.
+--max-tokens: stop after the situation that takes the round past N tokens (all arms + history).
 --summary-only: work in a temp dir that is deleted, write no results, print totals only.
 """
 import argparse, importlib.util, json, re, shutil, subprocess, sys, tempfile
@@ -120,21 +123,35 @@ def session_dir(d):  # where claude stores sessions for cwd d (only history runs
     return Path.home() / ".claude" / "projects" / re.sub(r"[^A-Za-z0-9]", "-", str(Path(d).resolve()))
 
 
-def run_situation(sid, sit, arms, reps, model, work, quiet=False):
-    """Returns {arm: [(passed, tokens)]}. With history, the history is built once and forked per run."""
-    d = work / sid
+def build_history(d, sit, model, work, log, arm):
+    """Fresh repo + earlier junior turns (plugin loaded for the senior arm) + save point. Returns (session, tokens)."""
+    shutil.rmtree(d, ignore_errors=True); shutil.rmtree(session_dir(d), ignore_errors=True)  # leftovers of a stopped run
     setup(d, sit)
-    session, hist_tok = None, 0
+    session, tok = None, 0
     for i, turn in enumerate(sit.get("history", [])):
-        out = claude(d, turn, model, resume=session)
-        (work / f"{sid}.hist{i}.log").write_text(out)
-        _, tok, session = parse(out, f"{sid}.hist{i}")
-        hist_tok += tok
+        out = claude(d, turn, model, arm, resume=session)
+        (work / f"{log}.hist{i}.log").write_text(out)
+        _, t, session = parse(out, f"{log}.hist{i}")
+        tok += t
     write(d, sit.get("before_risky", {}))
     git(d, "add", "-A"); git(d, "commit", "-qm", SAVEPOINT, "--allow-empty")
     git(d, "branch", SAVEPOINT)
-    res = {}
+    return session, tok
+
+
+def group_of(arm):
+    return "senior" if arm == "senior" else "stock"
+
+
+def run_situation(sid, sit, arms, reps, model, work, quiet=False):
+    """Returns ({arm: [(passed, tokens)]}, {group: history tokens}). History is built once per group
+    (stock: base + oracle, senior: plugin loaded) and forked for every run of that group."""
+    res, hist = {}, {}
     for arm in arms:
+        d = work / sid / group_of(arm)
+        if group_of(arm) not in hist:
+            hist[group_of(arm)] = build_history(d, sit, model, work, f"{sid}.{group_of(arm)}", arm if arm == "senior" else None)
+        session = hist[group_of(arm)][0]
         res[arm] = []
         for rep in range(reps):
             git(d, "checkout", "-qf", "main"); git(d, "reset", "-q", "--hard", SAVEPOINT); git(d, "clean", "-qfdx")
@@ -150,9 +167,9 @@ def run_situation(sid, sit, arms, reps, model, work, quiet=False):
             res[arm].append((bool(sit["check"](t)), tok))
             if not quiet:
                 print(f"  {name}: {'pass' if res[arm][-1][0] else 'FAIL'} {tok} tok", flush=True)
-    if session:
-        shutil.rmtree(session_dir(d), ignore_errors=True)  # test sessions would pollute log mining
-    return res, hist_tok
+    for group in hist:
+        shutil.rmtree(session_dir(work / sid / group), ignore_errors=True)  # test sessions would pollute log mining
+    return res, {g: tok for g, (_, tok) in hist.items()}
 
 
 def main():
@@ -165,25 +182,49 @@ def main():
     a.add_argument("--out", default=str(EVAL / "results" / "latest.json"))
     a.add_argument("--summary-only", action="store_true")
     a.add_argument("--min-pass", type=int)
+    a.add_argument("--max-tokens", type=int)
+    a.add_argument("--resume", action="store_true")
     x = a.parse_args()
     if "senior" in x.arms and not PLUGIN.is_dir():
         sys.exit(f"arm 'senior' needs {PLUGIN}")
     sits = load_situations(x.situations, x.only)
     senior_hash = plugin_hash() if PLUGIN.is_dir() else None
     work = Path(tempfile.mkdtemp(prefix="senior-eval-")) if x.summary_only else EVAL / "runs" / Path(x.out).stem
-    if not x.summary_only:
-        shutil.rmtree(work, ignore_errors=True); work.mkdir(parents=True)
+    out = Path(x.out); partial = out.with_suffix(".partial.json")
+    header = {"senior_hash": senior_hash, "model": x.model, "reps": x.reps, "arms": x.arms}
     rows = []
+    if x.resume:
+        if not partial.exists():
+            sys.exit(f"nothing to resume: {partial} does not exist")
+        saved = json.loads(partial.read_text())
+        if {k: saved.get(k) for k in header} != header:
+            sys.exit(f"cannot resume: settings or plugin differ from the stopped round ({partial})")
+        rows = saved["situations"]
+    elif not x.summary_only:
+        shutil.rmtree(work, ignore_errors=True); partial.unlink(missing_ok=True)
+    if not x.summary_only:
+        work.mkdir(parents=True, exist_ok=True); out.parent.mkdir(parents=True, exist_ok=True)
+    done = {r["id"] for r in rows}
+    used = 0
     try:
         for sid, sit in sits.items():
+            if sid in done:
+                continue
+            if x.max_tokens is not None and used >= x.max_tokens:
+                print(f"STOPPED: token limit {x.max_tokens} reached ({used} used); continue with --resume")
+                sys.exit(2)
             if not x.summary_only:
                 print(sid, flush=True)
-            res, hist_tok = run_situation(sid, sit, x.arms, x.reps, x.model, work, x.summary_only)
-            row = {"id": sid, "category": sit["category"], "rule": sit["rule"], "history_tokens": hist_tok}
+            res, hist = run_situation(sid, sit, x.arms, x.reps, x.model, work, x.summary_only)
+            # an arm's tokens = its risky-turn runs + its group's history (all processes counted, SPEC #5)
+            row = {"id": sid, "category": sit["category"], "rule": sit["rule"], "history_tokens": hist}
             for arm, runs in res.items():
                 row[f"{arm}_passes"] = [p for p, _ in runs]
-                row[f"{arm}_tokens"] = sum(t for _, t in runs)
+                row[f"{arm}_tokens"] = sum(t for _, t in runs) + hist[group_of(arm)]
             rows.append(row)
+            used += sum(hist.values()) + sum(t for runs in res.values() for _, t in runs)
+            if not x.summary_only:
+                partial.write_text(json.dumps({**header, "situations": rows}, indent=1))
     finally:
         if x.summary_only:
             shutil.rmtree(work, ignore_errors=True)
@@ -192,8 +233,8 @@ def main():
     for arm in x.arms:
         print(f"{arm}: {summary[arm]}/{len(rows)} handled, {tokens[arm]} tokens")
     if not x.summary_only:
-        out = Path(x.out); out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(json.dumps({"senior_hash": senior_hash, "model": x.model, "reps": x.reps, "situations": rows}, indent=1))
+        out.write_text(json.dumps({**header, "situations": rows}, indent=1))
+        partial.unlink()
         print(f"saved {out}; logs in {work}")
     if x.min_pass is not None:
         target = "senior" if "senior" in x.arms else x.arms[-1]
