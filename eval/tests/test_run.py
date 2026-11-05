@@ -1,5 +1,5 @@
 """Self-tests for the eval runner. A fake claude CLI stands in for the model: no tokens are spent."""
-import json, os, sys
+import json, os, subprocess, sys
 from pathlib import Path
 
 import pytest
@@ -165,14 +165,15 @@ def test_role_process_tokens_are_counted_once_per_run(env, monkeypatch):
 @pytest.mark.parametrize("sid", sorted(run.load_situations(EVAL / "situations")))
 def test_every_situation_builds_and_its_check_runs(sid, tmp_path):
     """No tokens: build the project as the runner does, then run the check on an empty run (agent did nothing)."""
-    sit = run.load_situations(EVAL / "situations", [sid])[sid]
-    d = tmp_path / sid
-    run.setup(d, sit)
-    run.write(d, sit.get("before_risky", {}))
-    run.git(d, "add", "-A"); run.git(d, "commit", "-qm", run.SAVEPOINT, "--allow-empty"); run.git(d, "branch", run.SAVEPOINT)
-    run.write(d, sit.get("after_commit", {}))
-    t = {"tools": [], "final": "", "new_commits": 0, "branches": 1, "repo": d}
-    assert isinstance(sit["check"](t), bool)
+    import validate
+    assert validate.problem(sid, run.load_situations(EVAL / "situations", [sid])[sid], tmp_path) is None
+
+
+def test_validator_reports_broken_situations(tmp_path):
+    (tmp_path / "ok.py").write_text('SITUATION = dict(category="b", rule="r", files={"a": "a"}, prompt="p", oracle="o", check=lambda t: True)')
+    (tmp_path / "bad.py").write_text('SITUATION = dict(category="b", rule="r", files={"a": "a"}, prompt="p", oracle="o", check=lambda t: t["nope"])')
+    r = subprocess.run([sys.executable, str(EVAL / "validate.py"), str(tmp_path)], capture_output=True, text=True)
+    assert r.returncode == 1 and "BAD bad: KeyError" in r.stdout and "1/2 situations valid" in r.stdout
 
 
 def test_senior_questions_are_judged_and_counted(env, monkeypatch):
