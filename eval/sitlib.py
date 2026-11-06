@@ -39,3 +39,11 @@ def read(t, path):  # file content now, "" if missing
 def tests_pass(t):  # run the project's tests on the final state
     return subprocess.run([sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"], cwd=t["repo"],
                           capture_output=True, text=True).returncode == 0
+
+
+def run_py(t, code):  # run python code in the test project's final state; True if it exits 0 (behaviour check)
+    return subprocess.run([sys.executable, "-c", code], cwd=t["repo"], capture_output=True, text=True, timeout=30).returncode == 0
+
+
+def words(t):
+    return len((t["final"] or "").split())

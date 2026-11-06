@@ -42,6 +42,10 @@ def write(d, files):
         f.write_text(c)
 
 
+def restore_ignored(d, files):  # re-create situation files that are missing (gitignored data the reset cannot restore)
+    write(d, {p: c for p, c in files.items() if not (Path(d) / p).exists()})
+
+
 def setup(d, sit):
     Path(d).mkdir(parents=True)
     write(d, sit["files"])
@@ -141,6 +145,12 @@ def build_history(d, sit, model, work, log, arm):
     return session, tok
 
 
+def rescore_totals(rows):  # all questions (both arms): pass A (the scores) vs pass B (the independent second pass)
+    a = [q for r in rows for q in r.get("questions", []) + r.get("base_questions", [])]
+    b = [q for r in rows for q in r.get("questions_b", []) + r.get("base_questions_b", [])]
+    return {"good_a": sum(q["good"] for q in a), "total_a": len(a), "good_b": sum(q["good"] for q in b), "total_b": len(b)}
+
+
 def group_of(arm):
     return "senior" if arm == "senior" else "stock"
 
@@ -148,7 +158,7 @@ def group_of(arm):
 def run_situation(sid, sit, arms, reps, model, work, quiet=False):
     """Returns ({arm: [(passed, tokens)]}, {group: history tokens}). History is built once per group
     (stock: base + oracle, senior: plugin loaded) and forked for every run of that group."""
-    res, hist, questions, judge_tok = {}, {}, [], 0
+    res, hist, questions, judge_tok = {}, {}, {"senior": [], "base": [], "senior_b": [], "base_b": []}, 0
     for arm in arms:
         d = work / sid / group_of(arm)
         if group_of(arm) not in hist:
@@ -160,6 +170,7 @@ def run_situation(sid, sit, arms, reps, model, work, quiet=False):
             for b in git(d, "branch", "--format=%(refname:short)").split():
                 if b not in ("main", SAVEPOINT):
                     git(d, "branch", "-qD", b)
+            restore_ignored(d, {**sit["files"], **sit.get("before_risky", {})})  # `clean -x` also wiped gitignored files
             write(d, sit.get("after_commit", {}))
             roles_before = len(role_usage(d))
             out = claude(d, message(sit, arm), model, arm, resume=session, fork=True)
@@ -167,9 +178,11 @@ def run_situation(sid, sit, arms, reps, model, work, quiet=False):
             (work / f"{name}.log").write_text(out)
             t, tok = observe(d, out, name, roles_before)
             res[arm].append((bool(sit["check"](t)), tok))
-            if arm == "senior" and "?" in (t["final"] or ""):  # SPEC #6 grades Senior's questions only
+            if arm in ("base", "senior") and "?" in (t["final"] or ""):  # SPEC #6: same judge on stock and Senior
                 verdicts, jt = judge(sit["prompt"], t["final"], d)
-                questions += [{"run": name, **v} for v in verdicts]; judge_tok += jt
+                questions[arm] += [{"run": name, **v} for v in verdicts]; judge_tok += jt
+                again, jt = judge(sit["prompt"], t["final"], d); judge_tok += jt  # second independent pass: SPEC #6 judge stability
+                questions[arm + "_b"] += [{"run": name, **v} for v in again]
             if not quiet:
                 print(f"  {name}: {'pass' if res[arm][-1][0] else 'FAIL'} {tok} tok", flush=True)
     for group in hist:
@@ -223,7 +236,9 @@ def main():
             res, hist, questions, judge_tok = run_situation(sid, sit, x.arms, x.reps, x.model, work, x.summary_only)
             # an arm's tokens = its risky-turn runs + its group's history (all processes counted, SPEC #5)
             row = {"id": sid, "category": sit["category"], "rule": sit["rule"], "history_tokens": hist,
-                   "judge_tokens": judge_tok, "questions": questions}
+                   "judge_tokens": judge_tok, "questions": questions["senior"],
+                   "base_questions": questions["base"],
+                   "questions_b": questions["senior_b"], "base_questions_b": questions["base_b"]}
             for arm, runs in res.items():
                 row[f"{arm}_passes"] = [p for p, _ in runs]
                 row[f"{arm}_tokens"] = sum(t for _, t in runs) + hist[group_of(arm)]
@@ -236,13 +251,19 @@ def main():
             shutil.rmtree(work, ignore_errors=True)
     summary = {arm: sum(handled(r[f"{arm}_passes"]) for r in rows) for arm in x.arms}
     tokens = {arm: sum(r[f"{arm}_tokens"] for r in rows) for arm in x.arms}
+    for r in ([] if x.summary_only else rows):  # (hidden for the sealed exam) ranges, not just verdicts: k/n passes per arm; ~ marks a borderline split (rerun with --only)
+        cells = [f"{arm} {sum(r[f'{arm}_passes'])}/{len(r[f'{arm}_passes'])}" for arm in x.arms]
+        mixed = any(0 < sum(r[f"{arm}_passes"]) < len(r[f"{arm}_passes"]) for arm in x.arms)
+        print(f"  {'~' if mixed else ' '} {r['id']:<28}" + "  ".join(cells))
     for arm in x.arms:
         print(f"{arm}: {summary[arm]}/{len(rows)} handled, {tokens[arm]} tokens")
     if not x.summary_only:
         final = {**header, "situations": rows}
         if "senior" in x.arms:  # gate input for SPEC #6; per-question verdicts stay in each row
-            qs = [q for r in rows for q in r["questions"]]
-            final["questions"] = {"total": len(qs), "good": sum(q["good"] for q in qs)}
+            for key, field in (("questions", "questions"), ("base_questions", "base_questions")):
+                qs = [q for r in rows for q in r.get(field, [])]
+                final[key] = {"total": len(qs), "good": sum(q["good"] for q in qs)}
+            final["judge_rescore"] = rescore_totals(rows)
         out.write_text(json.dumps(final, indent=1))
         partial.unlink()
         print(f"saved {out}; logs in {work}")
