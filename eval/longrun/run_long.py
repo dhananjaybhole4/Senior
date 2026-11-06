@@ -136,7 +136,7 @@ def main():
     a = argparse.ArgumentParser()
     a.add_argument("round", choices=["qualify", "latest"])
     a.add_argument("--cap", type=int, required=True, help="per run: stop after this many tokens (assistant + roles + junior)")
-    a.add_argument("--projects", nargs="*", default=sorted(p.stem for p in PROJECTS.glob("*.py")))
+    a.add_argument("--projects", nargs="*", default=sorted(p.stem for p in PROJECTS.glob("[!_]*.py")))
     a.add_argument("--reps", type=int, default=REPS)
     a.add_argument("--model", default="sonnet")
     x = a.parse_args()
