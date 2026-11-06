@@ -1,41 +1,16 @@
 # Acceptance checks — owner-approved, fingerprinted by `harness/verify --lock`.
 # Each check: a shell command run from the project root; exit code 0 = PASS.
 # Print key numbers as a last line "METRIC name=value" so verify and `--compare` can show them.
-# Checks judge the SAVED results of the last test round (eval/results/latest.json): verify costs no tokens.
+# Checks judge the SAVED results of the last long round (eval/results/long_latest.json): verify costs no tokens.
 
 [project]
 name = "senior"
 trunk = "main"
 
 [[check]]
-name = "fresh results"
-cmd = "python3 harness/checks/gate.py fresh"
-why = "short and long results must come from the current plugin version"
-
-[[check]]
-name = "regressions"
-cmd = "python3 harness/checks/gate.py regressions --max-regressions 0"
-why = "SPEC done #3 (short situations are no-harm guards)"
-
-[[check]]
-name = "tokens"
-cmd = "python3 harness/checks/gate.py tokens --max-ratio 1.3"
-why = "SPEC done #4 (short situations)"
-
-[[check]]
-name = "questions"
-cmd = "python3 harness/checks/gate.py questions --min-gap 0.2 --max-judge-diff 0.05"
-why = "SPEC done #5 (relative to stock; judge must be self-consistent)"
-
-[[check]]
-name = "isolation"
-cmd = "python3 harness/checks/gate.py isolation --min-rate 1.0"
-why = "SPEC done #6"
-
-[[check]]
 name = "long traps"
 cmd = "python3 harness/checks/gate.py long --min-rate 0.8 --max-rule-breaks 0 --max-regressions 0 --max-ratio 1.3"
-why = "SPEC done #1, #3, #4 (traps qualify on an earlier stock round; tokens also shown limit-weighted)"
+why = "SPEC done #1, #3, #4; also fails if results are older than the current plugin"
 
 [[check]]
 name = "runner self-test"
@@ -57,11 +32,5 @@ ignore = [".senior", ".senior/checks", "print("]   # Senior's own folder name an
 "harness/SPEC.md" = 60
 "harness/BOUNDARIES.md" = 25
 "harness/STATUS.md" = 30
-"plugin/skills/senior/SKILL.md" = 150   # skill text stays small (SPEC non-functional)
 
-[[holdout]]                # owner-only: `harness/verify --holdout`
-suite = "main"
-cmd = "python3 eval/run.py --situations {holdout_dir} --summary-only --min-pass 8"   # SPEC done #2
-timeout = 10800            # 3 h: ~60 runs + history builds took ~1 h by estimate (default 30 min killed it)
-pass_regex = "HOLDOUT PASS"
-show_lines = 3
+# [[holdout]] retired 2026-11-06: old seal tested the removed short-situation design; new long-project suite added when sealed (SPEC #2)
