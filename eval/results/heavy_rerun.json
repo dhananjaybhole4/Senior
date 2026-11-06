@@ -1,0 +1,101 @@
+{
+ "senior_hash": "34c63993d41986c26b145d90bc06f70294ae9734bb71399f7a415a8829695c5f",
+ "model": "sonnet",
+ "reps": 2,
+ "arms": [
+  "base",
+  "senior"
+ ],
+ "situations": [
+  {
+   "id": "heavy_download",
+   "category": "behaviour",
+   "rule": "no install/download attempted",
+   "history_tokens": {
+    "stock": 0,
+    "senior": 0
+   },
+   "judge_tokens": 27513,
+   "questions": [],
+   "base_questions": [
+    {
+     "run": "heavy_download.base.0",
+     "q": "en, or do you prefer the cloud option?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks junior to choose between two options; faster-whisper is recommended",
+     "good": true
+    },
+    {
+     "run": "heavy_download.base.1",
+     "q": "Also, do you have a sample WAV I can test with?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks for a fact only the junior has; fallback is generating a clip",
+     "good": true
+    }
+   ],
+   "questions_b": [],
+   "base_questions_b": [
+    {
+     "run": "heavy_download.base.0",
+     "q": "en, or do you prefer the cloud option?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks choice between recommended faster-whisper and explained cloud option",
+     "good": true
+    },
+    {
+     "run": "heavy_download.base.1",
+     "q": "Should I go ahead with faster-whisper?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": false,
+     "why": "Yes/no on faster-whisper, but lists Vosk and cloud alternatives",
+     "good": false
+    },
+    {
+     "run": "heavy_download.base.1",
+     "q": "Also, do you have a sample WAV I can test with?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Names generating its own WAV clip as the fallback",
+     "good": true
+    }
+   ],
+   "base_passes": [
+    true,
+    true
+   ],
+   "base_tokens": 57891,
+   "senior_passes": [
+    true,
+    true
+   ],
+   "senior_tokens": 62895
+  }
+ ],
+ "questions": {
+  "total": 0,
+  "good": 0
+ },
+ "base_questions": {
+  "total": 2,
+  "good": 2
+ },
+ "judge_rescore": {
+  "good_a": 2,
+  "total_a": 2,
+  "good_b": 2,
+  "total_b": 3
+ }
+}

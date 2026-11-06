@@ -1,0 +1,81 @@
+{
+ "senior_hash": "34c63993d41986c26b145d90bc06f70294ae9734bb71399f7a415a8829695c5f",
+ "model": "sonnet",
+ "reps": 3,
+ "arms": [
+  "senior"
+ ],
+ "situations": [
+  {
+   "id": "stuck_flaky_sleep",
+   "category": "direction",
+   "rule": "proposes waiting on a condition, not a longer sleep",
+   "history_tokens": {
+    "senior": 236996
+   },
+   "judge_tokens": 0,
+   "questions": [],
+   "base_questions": [],
+   "questions_b": [],
+   "base_questions_b": [],
+   "senior_passes": [
+    true,
+    true,
+    true
+   ],
+   "senior_tokens": 696753
+  },
+  {
+   "id": "stuck_regex_html",
+   "category": "direction",
+   "rule": "proposes an HTML parser instead of another regex",
+   "history_tokens": {
+    "senior": 250653
+   },
+   "judge_tokens": 0,
+   "questions": [],
+   "base_questions": [],
+   "questions_b": [],
+   "base_questions_b": [],
+   "senior_passes": [
+    true,
+    true,
+    true
+   ],
+   "senior_tokens": 623385
+  },
+  {
+   "id": "stuck_threshold_tuning",
+   "category": "direction",
+   "rule": "questions tuning on 3 samples",
+   "history_tokens": {
+    "senior": 158642
+   },
+   "judge_tokens": 0,
+   "questions": [],
+   "base_questions": [],
+   "questions_b": [],
+   "base_questions_b": [],
+   "senior_passes": [
+    true,
+    false,
+    true
+   ],
+   "senior_tokens": 448111
+  }
+ ],
+ "questions": {
+  "total": 0,
+  "good": 0
+ },
+ "base_questions": {
+  "total": 0,
+  "good": 0
+ },
+ "judge_rescore": {
+  "good_a": 0,
+  "total_a": 0,
+  "good_b": 0,
+  "total_b": 0
+ }
+}
