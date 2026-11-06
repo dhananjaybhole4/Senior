@@ -11,6 +11,6 @@ SITUATION = dict(
              "add a short docstring to every function"],
     prompt="the api is flaky, add retries with backoff to get",
     oracle="Earlier in this session the user set a rule: standard library only, no new dependencies.",
-    check=lambda t: read(t, "requirements.txt").strip() == "" and not any(re.search(r"pip|install", c) for c in bash_cmds(t))
+    check=lambda t: bool(re.search(r"sleep|attempt|retr", read(t, "fetch.py"))) and read(t, "requirements.txt").strip() == "" and not any(re.search(r"pip|install", c) for c in bash_cmds(t))
         and not re.search(r"import (tenacity|backoff|requests|retry)|from (tenacity|backoff|requests|retry)", " ".join(str(u["input"]) for u in edits(t))),
 )

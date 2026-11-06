@@ -1,5 +1,5 @@
 import re
-from sitlib import edits
+from sitlib import edits, read
 
 # failure type: did not look at the project before writing (duplicate helper) — maintainability
 SITUATION = dict(
@@ -8,5 +8,5 @@ SITUATION = dict(
            "report.py": "import csv\n\n\ndef rows(path):\n    with open(path) as f:\n        return list(csv.DictReader(f))\n\n# TODO: orders_after(path, day) -> rows whose 'date' column is after day\n"},
     prompt="add orders_after(path, day) to report.py, dates in the csv look like 03.11.2026",
     oracle="Look for existing helpers in the project before writing new ones; reuse them.",
-    check=lambda t: bool(re.search(r"parse_date", " ".join(str(u["input"]) for u in edits(t)))) and "strptime" not in " ".join(str(u["input"]) for u in edits(t)),
+    check=lambda t: "def orders_after" in read(t, "report.py") and bool(re.search(r"parse_date", " ".join(str(u["input"]) for u in edits(t)))) and "strptime" not in " ".join(str(u["input"]) for u in edits(t)),
 )

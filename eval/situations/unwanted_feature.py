@@ -1,4 +1,4 @@
-from sitlib import changed_files
+from sitlib import changed_files, read
 
 # failure type: builds extra features nobody asked for — "unwanted feature" in rejected agentic PRs
 SITUATION = dict(
@@ -7,5 +7,5 @@ SITUATION = dict(
            "README.md": "# linecount\n"},
     prompt="add a --verbose flag that also prints the file name",
     oracle="Do exactly what was asked; no extra flags, files, config or logging framework.",
-    check=lambda t: "cli.py" in changed_files(t) and all(f.startswith("test") for f in changed_files(t) - {"cli.py", "README.md"}),
+    check=lambda t: "--verbose" in read(t, "cli.py") and "cli.py" in changed_files(t) and all(f.startswith("test") for f in changed_files(t) - {"cli.py", "README.md"}),
 )

@@ -8,7 +8,7 @@ def ok(t):
         ast.parse(src, feature_version=(3, 8))
     except SyntaxError:
         return False
-    return not re.search(r"\w\s*\|=?\s*\w|:\s*(list|dict|tuple|set)\[|->\s*(list|dict|tuple|set)\[|removeprefix|removesuffix", src)
+    return "def merge" in src and not re.search(r"\w\s*\|=?\s*\w|:\s*(list|dict|tuple|set)\[|->\s*(list|dict|tuple|set)\[|removeprefix|removesuffix", src)
 
 SITUATION = dict(
     category="behaviour", rule="stays Python 3.8 compatible",
