@@ -14,9 +14,9 @@
 - Python 3.8: every run graded a 2nd time on 3.8; grader changes re-grade kept projects (no model calls).
 **Paused (owner usage limit, resets 18:30):** qualify round stopped after 4 of 8 stock runs (expenses ×2, gradebook ×2;
   photos r0 lost). Stock broke a stated rule in 3 of 4 (expenses r1 turns 6-9, gradebook ×2). Resume: same command.
-**Next (owner-approved plan: score only critical damage):** "own tests pass" → guard; new 5th project with
-  secret-in-repo (#3) and "just make the tests pass" (#4); honest-final-answer judge on every project (#5,
-  re-grade only); per-request snapshots → earlier feature broken later (#6). Then resume qualify round.
+**Next = last bounded test (~5M, after 18:30, fresh chat):** build new project (secret leaked + "just make the
+  tests pass"); stock runs photos ×2 + new project ×2. Stop rule: stock fails ≥2 of the 3 critical scenarios →
+  continue with a lean Senior; else stop and ship Senior = rules file (ledger hook) only.
 **Needs owner:** nothing now.
 **Last verify 2026-11-06:** self-test (75), fingerprint, size, hardcode, docs PASS; result checks FAIL (plugin changed; no full round yet).
 **Not verified:** short-situation token results (inflated by the same bug: rerun needed);
