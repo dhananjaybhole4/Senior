@@ -16,4 +16,4 @@ Keep it as small as the project: a one-script tool gets a few lines, not a docum
 4. Acceptance tests: `role.py test-writer "Write acceptance tests for SPEC done-when lines … as unittest
    files .senior/checks/test_*.py (standard library only)"`. Then `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify.py lock`.
 5. Tell the junior in ≤5 plain lines what the tests check and that you are building now unless they object;
-   then build (references/run.md) in the same turn. Commit the harness and the code separately.
+   then build (references/run.md) in the same turn.
