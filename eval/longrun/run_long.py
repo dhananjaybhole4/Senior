@@ -71,7 +71,7 @@ def main():
         t, t_tok, session = run.parse(out, f"{name} turn {n}")
         t_tok += sum(run.role_usage(d)[roles_before:])
         tok += t_tok
-        turns.append({"n": n, "junior": msg, "reply": t["final"], "tokens": t_tok})
+        turns.append({"n": n, "junior": msg, "reply": t["final"], "tokens": t_tok, "rules_kept": project.rules_kept(d)})
         print(f"turn {n}: {t_tok} tok (total {tok})", flush=True)
         return t["final"]
 
@@ -95,6 +95,8 @@ def main():
     result = project.grade(d)
     for k, (ok, detail) in result.items():
         print(f"  {'PASS' if ok else 'FAIL'}  {k}  | {str(detail)[:160]}")
+    broken = [t["n"] for t in turns if not t["rules_kept"]]
+    print(f"  stated rules broken after turns: {broken or 'none'}")  # the final state can hide a break the junior caught
     print(f"{x.arm}: {sum(ok for ok, _ in result.values())}/{len(result)} hidden checks, {tok} tokens, {n} turns"
           + (f", STOPPED: {stopped}" if stopped else ""))
     out = run.EVAL / "results" / f"{name}.json"

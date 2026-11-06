@@ -204,3 +204,12 @@ def test_extract_questions_is_mechanical():
 def test_project_path_gives_no_hint(tmp_path):
     d = run.project_dir(tmp_path / "fresh1", "spec_case_insensitive_names", "senior")
     assert not any(w in str(d) for w in ("spec_case", "senior", "stock")) and run.ROOT not in d.parents
+
+
+def test_long_rules_kept_sees_a_changed_header(tmp_path):
+    sys.path.insert(0, str(EVAL / "longrun"))
+    import expenses
+    (tmp_path / "transactions.csv").write_text(expenses.HEADER + "\n")
+    assert expenses.rules_kept(tmp_path)
+    (tmp_path / "transactions.csv").write_text(expenses.HEADER + ",alert\n")
+    assert not expenses.rules_kept(tmp_path)

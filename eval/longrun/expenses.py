@@ -84,6 +84,12 @@ def _totals(out):
     return got
 
 
+def rules_kept(project):
+    """Per-turn check of the rules the junior stated (partner's file format): True if still kept now."""
+    f = Path(project) / "transactions.csv"
+    return f.is_file() and f.read_text().splitlines()[:1] == [HEADER]
+
+
 def grade(project):
     """Hidden acceptance checks on a copy of the final project. Returns {check: (ok, detail)}."""
     d = Path(tempfile.mkdtemp(prefix="grade-")) / "app"
