@@ -39,9 +39,9 @@ def main():
         r = json.loads(p.stdout)
     except json.JSONDecodeError:
         sys.exit(f"senior: {x.role} gave no result (exit {p.returncode}): {p.stderr.strip()[-500:]}")
-    tok = sum(m.get(k, 0) for m in (r.get("modelUsage") or {}).values() for k in TOKEN_KEYS)
+    by_type = [sum(m.get(k, 0) for m in (r.get("modelUsage") or {}).values()) for k in TOKEN_KEYS]
     with open(H / "usage.jsonl", "a") as f:
-        f.write(json.dumps({"role": x.role, "tokens": tok}) + "\n")
+        f.write(json.dumps({"role": x.role, "tokens": sum(by_type), "by_type": by_type}) + "\n")
     print(r.get("result", ""))
     sys.exit(1 if r.get("is_error") else 0)
 

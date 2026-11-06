@@ -68,7 +68,7 @@ def test_role_isolation(proj, tmp_path_factory, role, sees_src, kept):
     on_disk = [t for t in ("src/new.py", ".senior/checks/new.sh", ".senior/note.md") if (proj / t).exists()]
     assert on_disk == kept
     assert (proj / "src" / "secret.py").read_text() == "SECRET = 1\n"  # hidden files are untouched
-    assert json.loads((proj / ".senior" / "usage.jsonl").read_text()) == {"role": role, "tokens": 7}
+    assert json.loads((proj / ".senior" / "usage.jsonl").read_text()) == {"role": role, "tokens": 7, "by_type": [7, 0, 0, 0]}
 
 
 def test_primer_prints_the_every_turn_rules():

@@ -18,7 +18,7 @@ status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, t
 if "ROLE" in msg:  # pretend the plugin started a role process that used 100 tokens
     os.makedirs(".senior", exist_ok=True)
     with open(".senior/usage.jsonl", "a") as f:
-        f.write(json.dumps({"role": "builder", "tokens": 100}) + "\n")
+        f.write(json.dumps({"role": "builder", "tokens": 100, "by_type": [100, 0, 0, 0]}) + "\n")
 if "COMMIT" in msg:
     subprocess.run("git add -A && git commit -qm fake", shell=True, check=True)
 final = ("ASK: which one? default: A. " if "ASK" in msg else "") + f"status:{status}" + (" DIRECTED" if directed else "") + (" PLUGIN" if "--plugin-dir" in argv else "")

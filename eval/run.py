@@ -33,6 +33,8 @@ BUILTIN_TOOLS = "Read Edit Write Glob Grep Bash"  # fewer tool definitions = sma
 ALLOWED = "Read Edit Write Glob Grep Bash(git *) Bash(ls *) Bash(cat *) Bash(python -m pytest*) Bash(python3 -m pytest*)"
 TOKEN_KEYS = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
 MODEL_USAGE_KEYS = ("inputTokens", "outputTokens", "cacheCreationInputTokens", "cacheReadInputTokens")
+# token weights in the same order: list-price ratios, a proxy for how much each type counts against usage limits
+WEIGHTS = (1, 5, 1.25, 0.1)
 
 
 def git(d, *a):
@@ -89,10 +91,14 @@ def parse(stdout, where):
         raise RuntimeError(f"{where}: no result event; see its .log")
     # modelUsage covers every model the session used (e.g. a small helper model); usage only the main one
     if result.get("modelUsage"):
-        tok = sum(m.get(k, 0) for m in result["modelUsage"].values() for k in MODEL_USAGE_KEYS)
+        counts = [sum(m.get(k, 0) for m in result["modelUsage"].values()) for k in MODEL_USAGE_KEYS]
     else:
-        tok = sum(result.get("usage", {}).get(k, 0) for k in TOKEN_KEYS)
-    return {"tools": tools, "final": result.get("result")}, tok, result.get("session_id")
+        counts = [result.get("usage", {}).get(k, 0) for k in TOKEN_KEYS]
+    return {"tools": tools, "final": result.get("result"), "weighted": weighted(counts)}, sum(counts), result.get("session_id")
+
+
+def weighted(counts):  # counts in TOKEN_KEYS order
+    return round(sum(w * c for w, c in zip(WEIGHTS, counts)))
 
 
 def claude(d, msg, model, arm=None, resume=None, fork=False):
@@ -119,6 +125,11 @@ def message(sit, arm):
 def role_usage(d):  # tokens of role processes started by the plugin (scripts/role.py appends here)
     f = Path(d) / ".senior" / "usage.jsonl"
     return [json.loads(l)["tokens"] for l in f.read_text().splitlines()] if f.exists() else []
+
+
+def role_weighted(d):
+    f = Path(d) / ".senior" / "usage.jsonl"
+    return [weighted(json.loads(l)["by_type"]) for l in f.read_text().splitlines()] if f.exists() else []
 
 
 def observe(d, out, where, roles_before):
