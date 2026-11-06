@@ -10,7 +10,8 @@ Keep it as small as the project: a one-script tool gets a few lines, not a docum
    - `.senior/SPEC.md` (one-script tool ≤15 lines, bigger project ≤60): goal, 2-4 examples with real numbers,
      done-when lines that each name their test.
    - `.senior/BOUNDARIES.md`: the junior's lasting rules (rule 13), plus never / ask-first if any.
-   - `.senior/checks.toml`: one `[[check]]` with `cmd = "python3 -m unittest discover -s .senior/checks"`.
+   - `.senior/checks.toml`, exactly:
+     `[[check]]` / `name = "acceptance"` / `cmd = "python3 -m unittest discover -s .senior/checks"` / `why = "SPEC done-when"`
    Create `STATUS.md` only when work stops unfinished, `DECISIONS.md` only at the first lasting decision.
 4. Acceptance tests: `role.py test-writer "Write acceptance tests for SPEC done-when lines … as unittest
    files .senior/checks/test_*.py (standard library only)"`. Then `python3 ${CLAUDE_PLUGIN_ROOT}/scripts/verify.py lock`.
