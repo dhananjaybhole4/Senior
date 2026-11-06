@@ -1,5 +1,5 @@
 """Self-tests for the eval runner. A fake claude CLI stands in for the model: no tokens are spent."""
-import json, os, subprocess, sys
+import importlib, json, os, subprocess, sys
 from pathlib import Path
 
 import pytest
@@ -213,3 +213,11 @@ def test_long_rules_kept_sees_a_changed_header(tmp_path):
     assert expenses.rules_kept(tmp_path)
     (tmp_path / "transactions.csv").write_text(expenses.HEADER + ",alert\n")
     assert not expenses.rules_kept(tmp_path)
+
+
+def test_every_long_project_has_what_the_runner_needs():
+    sys.path.insert(0, str(EVAL / "longrun" / "projects"))
+    for f in sorted((EVAL / "longrun" / "projects").glob("[!_]*.py")):
+        m = importlib.import_module(f.stem)
+        assert all(hasattr(m, a) for a in ("FILES", "LATER_FILES", "WORLD", "SCRIPT", "TRAPS", "rules_kept", "grade")), f.stem
+        assert set(m.TRAPS.values()) <= {f"D{i}" for i in range(1, 8)} and max(m.LATER_FILES, default=0) < len(m.SCRIPT), f.stem
