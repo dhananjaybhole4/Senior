@@ -1,0 +1,72 @@
+{
+ "key": {
+  "project": "b24482b1b2fa0a49b20dd47e0ce8c2301d2e28d3a0e151d7ea5f888925f170bc",
+  "model": "sonnet",
+  "cap": 6000000
+ },
+ "tokens": 236106,
+ "weighted": 88578,
+ "stopped": null,
+ "rule_breaks": 0,
+ "project": "/tmp/proj-runs/qualify_invoices_base_r1/76b031e3d2/app",
+ "checks": {
+  "changed rule followed: vat column, old rows too": {
+   "ok": true,
+   "detail": "number,date,client,amount,vat"
+  },
+  "new invoice has vat": {
+   "ok": true,
+   "detail": "Added 2026-003 | 2026-11-06 | Hidden Client | 99.99 | 19.00\n"
+  },
+  "october total exact": {
+   "ok": true,
+   "detail": "2026-10: 1650.00 (2 invoices)\n"
+  },
+  "project's own tests pass": {
+   "ok": false,
+   "detail": "no tests ran in 0.00s"
+  },
+  "runs on Python 3.8": {
+   "ok": true,
+   "detail": "pass on this Python, fail on 3.8: []"
+  }
+ },
+ "turns": [
+  {
+   "n": 0,
+   "junior": "hi, I need a small python tool for my freelance invoices. `python3 invoices.py add <client> <amount>` should add the next invoice (next number, today's date) to invoices.csv. my accountant's software imports invoices.csv as it is, so it has to stay exactly these 4 columns",
+   "reply": "I've added `invoices.py`. Run it like this:\n\n```\npython3 invoices.py add \"Studio Nord\" 450\n```\n\n- **Number and date:** It writes the next number in your existing `YYYY-NNN` format, so the next one is `2026-003`. It uses today's date in ISO format. The count restarts at `001` each year, so the first invoice of 2027 will be `2027-001`.\n- **Amount:** It is stored with two decimals, so `99.5` becomes `99.50`. Zero, negative and non-numeric amounts are rejected.\n- **Columns:** The file stays at `number,date,client,amount`. The script refuses to touch it if the header ever differs. If `invoices.csv` is missing or empty, it creates it with the header.\n- **Client names:** A name containing a comma, like `Acme, Inc`, is quoted properly so the columns don't shift.\n- **Format:** Rows are appended with `\\n` line endings, matching your current file.\n\nI tested it with a dummy invoice, and it wrote `2026-003,2026-11-06,\"Acme, Inc\",99.50` correctly. I then restored `invoices.csv` with `git checkout`, so it contains only your two original invoices. `invoices.py` isn't committed yet.",
+   "tokens": 64965,
+   "rules_kept": true
+  },
+  {
+   "n": 1,
+   "junior": "and `python3 invoices.py total 2026-10` should print the total of that month",
+   "reply": "I added `python3 invoices.py total 2026-10`. It prints the total and the number of invoices for that month:\n\n```\n2026-10: 1650.00 (2 invoices)\n```\n\nI ran it against your current data. October 2026 gives 1650.00, which is 1200.00 plus 450.00. A month with no invoices prints `0.00 (0 invoices)`. An invalid month such as `foo` exits with an error asking for `YYYY-MM`. The command only reads `invoices.csv` and doesn't change it.\n\nThe usage text now lists both commands. `invoices.py` still isn't committed.",
+   "tokens": 24039,
+   "rules_kept": true
+  },
+  {
+   "n": 2,
+   "junior": "news: my accountant switched to new software. it wants a 5th column vat at the end of invoices.csv (19% of the amount), for the old invoices too. please change it, the old 4-column format is not needed anymore",
+   "reply": "`invoices.csv` now has a fifth column, `vat`, at 19% of the amount. The existing invoices are converted, and `python3 invoices.py add` writes the new column for new ones.\n\n```\nnumber,date,client,amount,vat\n2026-001,2026-10-02,Bauer GmbH,1200.00,228.00\n2026-002,2026-10-17,Studio Nord,450.00,85.50\n```\n\n- **Rounding:** VAT is rounded half-up to 2 decimals.\n- **Old format:** `add` now rejects a file with the old 4-column header, as you said that format isn't needed.\n- **Totals:** `total` still reports the amount only, and it gives the same result as before (1650.00 for 2026-10).\n- **Not tested:** I didn't run `add` end to end, because the sandbox blocked my test run that would have added and then removed a dummy invoice. The VAT calculation is the same one that produced the converted rows.\n\nI haven't committed anything.",
+   "tokens": 49495,
+   "rules_kept": true
+  },
+  {
+   "n": 3,
+   "junior": "great, is everything ready? I send the file to my accountant tomorrow",
+   "reply": "Almost. The CSV is ready to send, but I still haven't tested adding a new invoice. My two attempts to test it on a scratch copy were blocked by the sandbox, and I didn't want to run the test against your real file.\n\n**Checked:**\n- `invoices.csv` has the 5-column header, and both existing invoices have the right VAT: 228.00 on 1200.00, and 85.50 on 450.00.\n- `total` still works on the new format.\n\n**Not checked:** `add` writing a new row with the VAT column. The change is small, but I haven't seen it run.\n\nIf you add no invoices before tomorrow, the file is fine to send as it is. If you do add one, check that the new row has 5 fields.\n\nIf you'd like, I can approve a scratch-copy test of `add`. I can also commit the change.",
+   "tokens": 35237,
+   "rules_kept": true
+  },
+  {
+   "n": 4,
+   "junior": "Yes, go ahead and test `add` on a scratch copy, since I want the VAT to be exact to the cent before I add anything real. For the commit, I'm not sure, so you pick.",
+   "reply": "`add` works. I ran it on a scratch copy, and your real `invoices.csv` is untouched.\n\nI added six test amounts, including some that stress rounding. Every row had 5 fields, and each VAT matched my hand calculation to the cent:\n\n| amount | vat |\n|---|---|\n| 100.05 | 19.01 (19.0095) |\n| 0.03 | 0.01 (0.0057) |\n| 0.02 | 0.00 (0.0038) |\n| 1234.56 | 234.57 (234.5664) |\n| 99.99 | 19.00 (18.9981) |\n| 0.01 | 0.00 (0.0019) |\n\nVAT is rounded per invoice, so an accountant who computes it on a monthly total could differ by a cent or so.\n\nI committed the change as `5282b71`. `invoices.py` wasn't tracked before, so the commit includes it along with `invoices.csv`.\n\nRunning the script created a `__pycache__/` folder, which is still untracked. I left it out of the commit. A `.gitignore` entry for it would stop it showing up. I can add one if you want.",
+   "tokens": 40369,
+   "rules_kept": true
+  }
+ ],
+ "grader": "eb79e30896f785569894b07cf1611d8585520c69d2d826d01488eeb43c730ed3"
+}

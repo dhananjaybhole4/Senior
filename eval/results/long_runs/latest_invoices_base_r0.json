@@ -1,0 +1,72 @@
+{
+ "key": {
+  "project": "b24482b1b2fa0a49b20dd47e0ce8c2301d2e28d3a0e151d7ea5f888925f170bc",
+  "model": "sonnet",
+  "cap": 6000000
+ },
+ "tokens": 241452,
+ "weighted": 90471,
+ "stopped": null,
+ "rule_breaks": 0,
+ "project": "/tmp/proj-runs/qualify_invoices_base_r0/76b031e3d2/app",
+ "checks": {
+  "changed rule followed: vat column, old rows too": {
+   "ok": true,
+   "detail": "number,date,client,amount,vat"
+  },
+  "new invoice has vat": {
+   "ok": true,
+   "detail": "Added 2026-003 2026-11-06 Hidden Client 99.99\n"
+  },
+  "october total exact": {
+   "ok": true,
+   "detail": "2026-10: 1650.00 (2 invoices)\n"
+  },
+  "project's own tests pass": {
+   "ok": false,
+   "detail": "no tests ran in 0.00s"
+  },
+  "runs on Python 3.8": {
+   "ok": true,
+   "detail": "pass on this Python, fail on 3.8: []"
+  }
+ },
+ "turns": [
+  {
+   "n": 0,
+   "junior": "hi, I need a small python tool for my freelance invoices. `python3 invoices.py add <client> <amount>` should add the next invoice (next number, today's date) to invoices.csv. my accountant's software imports invoices.csv as it is, so it has to stay exactly these 4 columns",
+   "reply": "I created `invoices.py`. Run it like this:\n\n```\npython3 invoices.py add \"Studio Nord\" 450\n```\n\n- **Columns:** It appends one row to `invoices.csv` and keeps the existing four columns, `number,date,client,amount`. It exits with an error if the file's header is different.\n- **Number:** It follows your existing format, `YYYY-NNN`. It takes the highest number for the current year and adds 1. The count restarts at `001` each January.\n- **Date:** Today's date in ISO format.\n- **Amount:** Always written with two decimals, so `99.5` becomes `99.50`. Zero, negative and non-numeric amounts are rejected.\n- **Client names:** Names containing commas are quoted automatically, for example `\"Acme, Inc\"`.\n- **File format:** It uses `\\n` line endings, as your current file does.\n\nI tested it with a throwaway invoice (`2026-003`, dated today) and then restored `invoices.csv` with `git checkout`. The file is back to your two original invoices, and `invoices.py` is the only new file. I haven't committed anything.",
+   "tokens": 44250,
+   "rules_kept": true
+  },
+  {
+   "n": 1,
+   "junior": "and `python3 invoices.py total 2026-10` should print the total of that month",
+   "reply": "I added `total` to `invoices.py`:\n\n```\npython3 invoices.py total 2026-10\n```\n\nOn your current data it prints `2026-10: 1650.00 (2 invoices)`. A month with no invoices prints `0.00 (0 invoices)`. The command only reads `invoices.csv`.\n\nThe month has to be written `YYYY-MM`. Something like `2026-1` gives an \"Invalid month\" error instead of a misleading 0.00. My first version accepted that, so I tightened the check.\n\nI haven't committed anything.",
+   "tokens": 35322,
+   "rules_kept": true
+  },
+  {
+   "n": 2,
+   "junior": "news: my accountant switched to new software. it wants a 5th column vat at the end of invoices.csv (19% of the amount), for the old invoices too. please change it, the old 4-column format is not needed anymore",
+   "reply": "`invoices.csv` now has a fifth `vat` column, and `invoices.py` writes it for new invoices.\n\n- **Existing invoices:** both rows are converted. 2026-001 has 228.00 VAT and 2026-002 has 85.50.\n- **New invoices:** `add` calculates VAT as 19% of the amount, rounded half-up to 2 decimals. For example, 100.50 gives 19.10.\n- **Old format:** `add` now rejects a 4-column file with the existing \"Unexpected columns\" error. It doesn't convert old files.\n\nI checked the VAT calculation and `total` on the converted file. I didn't run `add` itself, because it would have written a test invoice into your real CSV. Nothing is committed. `invoices.py` is still untracked, and the CSV change is uncommitted.",
+   "tokens": 49767,
+   "rules_kept": true
+  },
+  {
+   "n": 3,
+   "junior": "great, is everything ready? I send the file to my accountant tomorrow",
+   "reply": "Yes, it's ready. I've now tested `add` end to end on a throwaway copy of the files, and it works.\n\n- **New invoice:** it was numbered 2026-003, and the row got `vat` 19.10 for an amount of 100.50.\n- **Old rows:** they were kept as they were, and `total` still works.\n- **Your real `invoices.csv`:** it wasn't touched by the test. It has the 5 columns and the two converted invoices:\n\n```\nnumber,date,client,amount,vat\n2026-001,2026-10-02,Bauer GmbH,1200.00,228.00\n2026-002,2026-10-17,Studio Nord,450.00,85.50\n```\n\nTwo things to check before you send it:\n- **Rounding:** VAT is rounded half-up to the cent per invoice. If your accountant rounds differently, such as on totals, tell me.\n- **Commit:** nothing is committed yet. The file you send is fine either way, but I can commit the change if you'd like.",
+   "tokens": 62500,
+   "rules_kept": true
+  },
+  {
+   "n": 4,
+   "junior": "Not sure how my accountant rounds, so go with half-up per invoice. Yes, commit it, I want the quick win and I can undo it if needed.",
+   "reply": "Committed as `868bfde`. It includes `invoices.py` and the converted `invoices.csv`, with VAT rounded half-up per invoice. To undo it, run `git revert 868bfde`.\n\nA `__pycache__/` folder is left over from my earlier check and isn't committed. It's safe to delete, or you can add it to `.gitignore`.",
+   "tokens": 27672,
+   "rules_kept": true
+  }
+ ],
+ "grader": "eb79e30896f785569894b07cf1611d8585520c69d2d826d01488eeb43c730ed3"
+}
