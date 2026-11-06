@@ -13,11 +13,14 @@ Progress is saved to <out>.partial.json after every situation; stopping (Ctrl+C,
 --max-tokens: stop after the situation that takes the round past N tokens (all arms + history).
 --summary-only: work in a temp dir that is deleted, write no results, print totals only.
 """
-import argparse, importlib.util, json, re, shutil, subprocess, sys, tempfile
+import argparse, hashlib, importlib.util, json, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 EVAL = Path(__file__).resolve().parent
-RUNS = EVAL.parent / "runs"  # generated test projects + logs (gitignored), kept out of the code folders
+RUNS = EVAL.parent / "runs"  # run logs (gitignored), kept out of the code folders
+# test projects live outside the repo under neutral names: the model reads its path, and a situation id,
+# arm name or repo path there is a hint (seen: "the folder name suggests case-insensitive")
+PROJECTS = Path(tempfile.gettempdir()) / "proj-runs"
 ROOT = EVAL.parent
 sys.path.insert(0, str(EVAL))
 sys.path.insert(0, str(ROOT / "harness" / "checks"))
@@ -152,6 +155,10 @@ def rescore_totals(rows):  # all questions (both arms): pass A (the scores) vs p
     return {"good_a": sum(q["good"] for q in a), "total_a": len(a), "good_b": sum(q["good"] for q in b), "total_b": len(b)}
 
 
+def project_dir(work, sid, group):
+    return PROJECTS / work.name / hashlib.sha1(f"{sid}.{group}".encode()).hexdigest()[:10] / "app"
+
+
 def group_of(arm):
     return "senior" if arm == "senior" else "stock"
 
@@ -161,7 +168,7 @@ def run_situation(sid, sit, arms, reps, model, work, quiet=False):
     (stock: base + oracle, senior: plugin loaded) and forked for every run of that group."""
     res, hist, questions, judge_tok = {}, {}, {"senior": [], "base": [], "senior_b": [], "base_b": []}, 0
     for arm in arms:
-        d = work / sid / group_of(arm)
+        d = project_dir(work, sid, group_of(arm))
         if group_of(arm) not in hist:
             hist[group_of(arm)] = build_history(d, sit, model, work, f"{sid}.{group_of(arm)}", arm if arm == "senior" else None)
         session = hist[group_of(arm)][0]
@@ -187,7 +194,7 @@ def run_situation(sid, sit, arms, reps, model, work, quiet=False):
             if not quiet:
                 print(f"  {name}: {'pass' if res[arm][-1][0] else 'FAIL'} {tok} tok", flush=True)
     for group in hist:
-        shutil.rmtree(session_dir(work / sid / group), ignore_errors=True)  # test sessions would pollute log mining
+        shutil.rmtree(session_dir(project_dir(work, sid, group)), ignore_errors=True)  # test sessions would pollute log mining
     return res, {g: tok for g, (_, tok) in hist.items()}, questions, judge_tok
 
 
@@ -208,7 +215,7 @@ def main():
         sys.exit(f"arm 'senior' needs {PLUGIN}")
     sits = load_situations(x.situations, x.only)
     senior_hash = plugin_hash() if PLUGIN.is_dir() else None
-    work = Path(tempfile.mkdtemp(prefix="senior-eval-")) if x.summary_only else RUNS / Path(x.out).stem
+    work = Path(tempfile.mkdtemp(prefix="proj-")) if x.summary_only else RUNS / Path(x.out).stem
     out = Path(x.out); partial = out.with_suffix(".partial.json")
     header = {"senior_hash": senior_hash, "model": x.model, "reps": x.reps, "arms": x.arms}
     rows = []

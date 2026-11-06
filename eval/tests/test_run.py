@@ -42,6 +42,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(run, "plugin_hash", lambda: "hash")
     monkeypatch.setattr(run, "EVAL", tmp_path)
     monkeypatch.setattr(run, "RUNS", tmp_path / "runs")  # runs/ go under tmp
+    monkeypatch.setattr(run, "PROJECTS", tmp_path / "projects")
     return tmp_path, sits
 
 
@@ -198,3 +199,8 @@ def test_extract_questions_is_mechanical():
     from judge import extract_questions
     assert extract_questions("Do you want me to install `torch`? Say **go** and I will.\n- Which engine? (a) or (b)") == [
         "Do you want me to install torch?", "Which engine?"]
+
+
+def test_project_path_gives_no_hint(tmp_path):
+    d = run.project_dir(tmp_path / "fresh1", "spec_case_insensitive_names", "senior")
+    assert not any(w in str(d) for w in ("spec_case", "senior", "stock")) and run.ROOT not in d.parents
