@@ -12,6 +12,7 @@ import run_long, gate
 PROJECT = '''from pathlib import Path
 FILES = {"a.txt": "a\\n"}
 LATER_FILES = {1: {"b.txt": "b\\n"}}
+NEW_SESSION_AT = 1
 WORLD = "You are Kim."
 SCRIPT = ["first", "second ROLE"]
 TRAPS = {"kept": "D6", "easy": "D1"}
@@ -65,6 +66,10 @@ def test_round_writes_gate_format_and_reuses_runs(env, monkeypatch):
     assert set(q["traps"]) == {"kept", "easy"} and q["traps"]["kept"] == {"kind": "D6", "base": [True, True]}
     assert q["guards"] == {"later file": {"base": [True, True]}}  # LATER_FILES written before request 2
     assert q["rule_breaks"]["base"] == [0, 0] and all(t > 0 for t in q["weighted"]["base"])
+    asked = [json.loads(c) for c in calls(env)]
+    asked = [c for c in asked if c[c.index("--model") + 1] == "sonnet"]
+    assert all("--resume" not in c for c in asked if c[c.index("-p") + 1] == "second ROLE")  # fresh session there
+    assert any("--resume" in c for c in asked if c[c.index("-p") + 1] not in ("first", "second ROLE"))  # follow-ups resume
     n = len(calls(env))
     main(monkeypatch, "qualify")
     assert len(calls(env)) == n  # finished runs reused: no new model calls

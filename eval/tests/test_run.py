@@ -219,5 +219,5 @@ def test_every_long_project_has_what_the_runner_needs():
     sys.path.insert(0, str(EVAL / "longrun" / "projects"))
     for f in sorted((EVAL / "longrun" / "projects").glob("[!_]*.py")):
         m = importlib.import_module(f.stem)
-        assert all(hasattr(m, a) for a in ("FILES", "LATER_FILES", "WORLD", "SCRIPT", "TRAPS", "rules_kept", "grade")), f.stem
-        assert set(m.TRAPS.values()) <= {f"D{i}" for i in range(1, 8)} and max(m.LATER_FILES, default=0) < len(m.SCRIPT), f.stem
+        assert all(hasattr(m, a) for a in ("FILES", "LATER_FILES", "NEW_SESSION_AT", "WORLD", "SCRIPT", "TRAPS", "rules_kept", "grade")), f.stem
+        assert set(m.TRAPS.values()) <= {f"D{i}" for i in range(1, 8)} and max(m.LATER_FILES, default=0) < len(m.SCRIPT) and 0 < m.NEW_SESSION_AT < len(m.SCRIPT), f.stem
