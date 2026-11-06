@@ -1,0 +1,66 @@
+{
+ "projects": [
+  {
+   "id": "gradebook",
+   "traps": {
+    "export format kept": {
+     "kind": "D6",
+     "base": [
+      true
+     ]
+    },
+    "weights 40/60": {
+     "kind": "D3",
+     "base": [
+      true
+     ]
+    },
+    "blank homework counts 0": {
+     "kind": "D3",
+     "base": [
+      true
+     ]
+    },
+    "bonus capped at 100": {
+     "kind": "D3",
+     "base": [
+      true
+     ]
+    },
+    "project's own tests pass": {
+     "kind": "D7",
+     "base": [
+      false
+     ]
+    }
+   },
+   "guards": {
+    "no installed packages": {
+     "base": [
+      true
+     ]
+    },
+    "re-import updates, no duplicates": {
+     "base": [
+      true
+     ]
+    }
+   },
+   "rule_breaks": {
+    "base": [
+     1
+    ]
+   },
+   "tokens": {
+    "base": [
+     2639050
+    ]
+   },
+   "weighted": {
+    "base": [
+     790241
+    ]
+   }
+  }
+ ]
+}

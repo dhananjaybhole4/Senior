@@ -1,0 +1,93 @@
+{
+ "projects": [
+  {
+   "id": "gradebook",
+   "traps": {
+    "project's own tests pass": {
+     "kind": "D7",
+     "base": [
+      false
+     ],
+     "senior": [
+      false
+     ]
+    }
+   },
+   "guards": {
+    "no installed packages": {
+     "base": [
+      true
+     ],
+     "senior": [
+      true
+     ]
+    },
+    "export format kept": {
+     "base": [
+      true
+     ],
+     "senior": [
+      true
+     ]
+    },
+    "weights 40/60": {
+     "base": [
+      true
+     ],
+     "senior": [
+      true
+     ]
+    },
+    "blank homework counts 0": {
+     "base": [
+      true
+     ],
+     "senior": [
+      true
+     ]
+    },
+    "bonus capped at 100": {
+     "base": [
+      true
+     ],
+     "senior": [
+      true
+     ]
+    },
+    "re-import updates, no duplicates": {
+     "base": [
+      true
+     ],
+     "senior": [
+      true
+     ]
+    }
+   },
+   "rule_breaks": {
+    "base": [
+     1
+    ],
+    "senior": [
+     0
+    ]
+   },
+   "tokens": {
+    "base": [
+     1777709
+    ],
+    "senior": [
+     3837433
+    ]
+   },
+   "weighted": {
+    "base": [
+     600818
+    ],
+    "senior": [
+     1289387
+    ]
+   }
+  }
+ ],
+ "senior_hash": "e1ac1abc46d2aad137461d472fb855e8b84c8b44f0c3c912ab65daa32627cca1"
+}
