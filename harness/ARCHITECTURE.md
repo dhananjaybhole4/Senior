@@ -7,6 +7,9 @@ eval/ — run.py (arms base/oracle/senior, fresh git repo per run, history built
   situations/<id>.py (30; SITUATION dict, check(t) on {tools, final, new_commits, branches, repo}); sitlib.py (helpers incl. committed_files, changed_files, read, tests_pass);
   judge.py (Haiku question grader, SPEC #6); isolation.py (SPEC #7: forbidden reads/writes per role, sandbox-only + real role agents → latest.json "isolation"); validate.py (situations build + checks run, counts only); rejudge.py (re-grade saved replies);
   merge_arms.py (Senior-only round + stock rows of an earlier round → one result file; isolation carried over);
+  longrun/ (explore): expenses.py = long project (files, WORLD, SCRIPT, hidden grade()); run_long.py = one session per arm + Haiku junior.
+  plugin/scripts/ledger.py: UserPromptSubmit hook, shows .senior/BOUNDARIES.md (standing rules) with every request.
+  run.py test projects live in tempdir/proj-runs/<round>/<hash>/app (neutral, outside repo); logs in runs/.
   make_holdout.py (owner runs; exam writer in bwrap with visible situations/pilot/results/runs/.git hidden; --fresh = agent-run, 15 new visible situations → eval/situations_fresh/, plugin/ hidden too);
   tests/ (fake claude CLI, zero tokens); results/<name>.json
 runs/ — generated test projects + logs per round (repo root, gitignored; outside the code-size count)
