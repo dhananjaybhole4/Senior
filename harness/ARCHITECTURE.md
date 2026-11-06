@@ -8,6 +8,7 @@ eval/ — run.py (arms base/oracle/senior, fresh git repo per run, history built
   judge.py (Haiku question grader, SPEC #6); isolation.py (SPEC #7: forbidden reads/writes per role, sandbox-only + real role agents → latest.json "isolation"); validate.py (situations build + checks run, counts only); rejudge.py (re-grade saved replies);
   merge_arms.py (Senior-only round + stock rows of an earlier round → one result file; isolation carried over);
   longrun/: projects/<name>.py = long project (FILES, LATER_FILES, WORLD, SCRIPT, TRAPS {check: D-kind}, rules_kept, hidden grade());
+    projects: expenses, gradebook, photos, plant; projects/_common.py = shared grading helpers (underscore = not a project).
     run_long.py qualify|latest = projects × reps × arms (one session per run + Haiku junior) → long_qualify.json / long_latest.json;
     finished runs saved in results/long_runs/, reused while project file, model, cap (+plugin for senior) unchanged.
   plugin/scripts/ledger.py: UserPromptSubmit hook, shows .senior/BOUNDARIES.md (standing rules) with every request.
