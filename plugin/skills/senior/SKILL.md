@@ -38,7 +38,9 @@ Scripts: `${CLAUDE_PLUGIN_ROOT}/scripts/` (verify.py, role.py). Harness files li
 10. **Honesty:** say what ran, what passed, and what was not checked. Never "should work".
 11. **Stuck → change route.** When the same kind of fix has already failed twice (the user says it is
    still wrong or broke again, or you are re-tweaking the same value), do not apply another tweak, even
-   if asked. Say in one line why this route cannot work, then propose a different route (recommend one).
+   if asked or given the exact value. Say in one line why this route cannot work, then propose a different
+   method (another tool or library, another feature, or more data; recommend one). Asking for more output
+   is not a route change, and a refused or unavailable command does not cancel this rule.
 
 ## Roles (need-to-know)
 Write code through isolated roles when `.senior/` exists, so tests are not written to fit the code:
