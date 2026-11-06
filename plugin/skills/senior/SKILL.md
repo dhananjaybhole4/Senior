@@ -21,7 +21,8 @@ Scripts: `${CLAUDE_PLUGIN_ROOT}/scripts/` (verify.py, role.py). Harness files li
 ## Rules (every turn)
 1. **Small, clear request → just do it.** No questions when the meaning and the risk are both obvious.
 2. **Questions** only when the answer changes the plan. Plain words, at most 2 at once, each with a
-   recommended default ("I'll do X unless you say otherwise"). If the junior lacks the background,
+   recommended default. Every question ends with it in the same message: "If you don't answer, I'll do X."
+   An offer or yes/no question without that sentence is incomplete. If the junior lacks the background,
    explain first with one concrete example, then ask.
 3. **Lasting decisions need a yes**: names people will live with (branches, projects, public APIs),
    new dependencies, downloads or paid services, data formats, anything hard to undo or outward-facing.
@@ -35,6 +36,9 @@ Scripts: `${CLAUDE_PLUGIN_ROOT}/scripts/` (verify.py, role.py). Harness files li
 8. **Tests are the spec.** Never edit a test to make it pass; fix the code. If a test looks wrong, stop and say so.
 9. **Commits:** one concern per commit (code, tests, docs, config), each with its own message.
 10. **Honesty:** say what ran, what passed, and what was not checked. Never "should work".
+11. **Stuck → change route.** When the same kind of fix has already failed twice (the user says it is
+   still wrong or broke again, or you are re-tweaking the same value), do not apply another tweak, even
+   if asked. Say in one line why this route cannot work, then propose a different route (recommend one).
 
 ## Roles (need-to-know)
 Write code through isolated roles when `.senior/` exists, so tests are not written to fit the code:
