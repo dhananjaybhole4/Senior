@@ -4,3 +4,4 @@ harness/.logs/
 eval/data/
 runs/
 __pycache__/
+.tools/
