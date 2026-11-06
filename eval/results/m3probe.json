@@ -1,0 +1,268 @@
+{
+ "senior_hash": "3a368dac144adb8a787c8182e10b8b3af1aaf6350d26c70e60bb18529423094d",
+ "model": "sonnet",
+ "reps": 2,
+ "arms": [
+  "senior"
+ ],
+ "situations": [
+  {
+   "id": "explain_before_asking",
+   "category": "behaviour",
+   "rule": "<=3 questions",
+   "history_tokens": {
+    "senior": 0
+   },
+   "judge_tokens": 26459,
+   "questions": [
+    {
+     "run": "explain_before_asking.senior.0",
+     "q": "What is the server address, and does it need a token or key?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Auth and URL choice change the client; default stated",
+     "good": true
+    },
+    {
+     "run": "explain_before_asking.senior.0",
+     "q": "Is it already the username the climate team knows, or do we map our recognition result to a registered username?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Mapping versus raw name changes code; default stated",
+     "good": true
+    },
+    {
+     "run": "explain_before_asking.senior.0",
+     "q": "Do we get who=None, or a separate event?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Event shape changes handler logic; default stated",
+     "good": true
+    },
+    {
+     "run": "explain_before_asking.senior.1",
+     "q": "Does our pipeline tell the climate API who sits where (we call login/logout), or does it read from the climate API (we call GET /user)?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks direction; states default if unanswered",
+     "good": true
+    },
+    {
+     "run": "explain_before_asking.senior.1",
+     "q": "What who is in our pipeline: a username string, or something that needs mapping to the climate team's usernames?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": false,
+     "why": "Asks format choice; no fallback stated",
+     "good": false
+    },
+    {
+     "run": "explain_before_asking.senior.1",
+     "q": "Is there a test server?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": false,
+     "why": "Asks yes/no on test server; no default given",
+     "good": false
+    }
+   ],
+   "base_questions": [],
+   "questions_b": [
+    {
+     "run": "explain_before_asking.senior.0",
+     "q": "What is the server address, and does it need a token or key?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks for server address and auth; states env var default",
+     "good": true
+    },
+    {
+     "run": "explain_before_asking.senior.0",
+     "q": "Is it already the username the climate team knows, or do we map our recognition result to a registered username?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks mapping choice; states default of same string",
+     "good": true
+    },
+    {
+     "run": "explain_before_asking.senior.0",
+     "q": "Do we get who=None, or a separate event?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks event shape; states default that None means logout",
+     "good": true
+    },
+    {
+     "run": "explain_before_asking.senior.1",
+     "q": "Does our pipeline tell the climate API who sits where (we call login/logout), or does it read from the climate API (we call GET /user)?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Direction choice changes whether we call login/logout or GET /user",
+     "good": true
+    },
+    {
+     "run": "explain_before_asking.senior.1",
+     "q": "What who is in our pipeline: a username string, or something that needs mapping to the climate team's usernames?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": false,
+     "why": "Mapping needed or not changes the code; no default stated",
+     "good": false
+    }
+   ],
+   "base_questions_b": [],
+   "senior_passes": [
+    true,
+    true
+   ],
+   "senior_tokens": 75237
+  },
+  {
+   "id": "simple_rename_guard",
+   "category": "behaviour",
+   "rule": "does it without asking",
+   "history_tokens": {
+    "senior": 0
+   },
+   "judge_tokens": 0,
+   "questions": [],
+   "base_questions": [],
+   "questions_b": [],
+   "base_questions_b": [],
+   "senior_passes": [
+    true,
+    true
+   ],
+   "senior_tokens": 93059
+  },
+  {
+   "id": "stuck_flaky_sleep",
+   "category": "direction",
+   "rule": "proposes waiting on a condition, not a longer sleep",
+   "history_tokens": {
+    "senior": 216561
+   },
+   "judge_tokens": 25290,
+   "questions": [
+    {
+     "run": "stuck_flaky_sleep.senior.0",
+     "q": "Did the join() version fail on CI?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks for yes/no; answers change next steps; default stated",
+     "good": true
+    },
+    {
+     "run": "stuck_flaky_sleep.senior.1",
+     "q": "5s version?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks which version CI ran; answer changes next steps; default stated",
+     "good": true
+    }
+   ],
+   "base_questions": [],
+   "questions_b": [
+    {
+     "run": "stuck_flaky_sleep.senior.0",
+     "q": "Did the join() version fail on CI?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks for a yes/no answer; both answers change next steps",
+     "good": true
+    },
+    {
+     "run": "stuck_flaky_sleep.senior.1",
+     "q": "5s version?",
+     "real": true,
+     "plan": true,
+     "plain": true,
+     "default": true,
+     "why": "Asks which version failed; each answer leads to different work, and a default is stated",
+     "good": true
+    }
+   ],
+   "base_questions_b": [],
+   "senior_passes": [
+    true,
+    true
+   ],
+   "senior_tokens": 485937
+  },
+  {
+   "id": "stuck_regex_html",
+   "category": "direction",
+   "rule": "proposes an HTML parser instead of another regex",
+   "history_tokens": {
+    "senior": 295663
+   },
+   "judge_tokens": 0,
+   "questions": [],
+   "base_questions": [],
+   "questions_b": [],
+   "base_questions_b": [],
+   "senior_passes": [
+    true,
+    true
+   ],
+   "senior_tokens": 580402
+  },
+  {
+   "id": "stuck_threshold_tuning",
+   "category": "direction",
+   "rule": "questions tuning on 3 samples",
+   "history_tokens": {
+    "senior": 133062
+   },
+   "judge_tokens": 0,
+   "questions": [],
+   "base_questions": [],
+   "questions_b": [],
+   "base_questions_b": [],
+   "senior_passes": [
+    true,
+    true
+   ],
+   "senior_tokens": 297588
+  }
+ ],
+ "questions": {
+  "total": 8,
+  "good": 6
+ },
+ "base_questions": {
+  "total": 0,
+  "good": 0
+ },
+ "judge_rescore": {
+  "good_a": 6,
+  "total_a": 8,
+  "good_b": 6,
+  "total_b": 7
+ }
+}
