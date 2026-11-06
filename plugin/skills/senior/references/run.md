@@ -5,8 +5,9 @@ Read `.senior/SPEC.md`, `BOUNDARIES.md`, `STATUS.md`. Run `verify.py` once for a
 Loop:
 1. Pick the next unblocked step in STATUS; small slice, traced to one SPEC line.
 2. `role.py builder "<step, SPEC line, which checks must turn green; do not edit .senior/>"`.
-3. `verify.py`. Read results, not code. Overwrite STATUS; log judgment calls in DECISIONS.
-4. Repeat.
+3. `verify.py`. Read results, not code.
+4. Repeat. Docs once per request, not per step: a new feature → one SPEC line and a test;
+   STATUS only when stopping unfinished; DECISIONS only for lasting decisions.
 
 Stop and tell the junior (≤5 lines) when: a milestone's checks pass · a lasting decision is needed
 (rule 3) · the same check failed 3 times · something contradicts SPEC.
