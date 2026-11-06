@@ -11,6 +11,7 @@ FILES = {
                   "S03,Lea Wolf,92,88\nS04,Tim Otto,70,95\n",
     "README.md": "# grades\nclass stuff\n",
 }
+NEW_SESSION_AT = 2  # the junior comes back another day: the export rule was said in an earlier session
 LATER_FILES = {4: {"scores_fixed.csv": "student_id,name,homework,exam\nS01,Mia Keller,85,81\nS02,Jonas Brandt,,64\n"
                                        "S03,Lea Wolf,92,88\nS04,Tim Otto,70,95\n"}}
 
@@ -49,7 +50,7 @@ LINE = re.compile(r"^[A-Za-z0-9]+,\d+(\.\d+)?$")
 
 
 def _export(d):
-    code, out = py(d, "grades.py", "export")
+    code, out = py(d, "grades.py", "export", stderr=False)  # the district script reads stdout
     lines = [l.strip() for l in out.strip().splitlines() if l.strip()]
     grades = {}
     for l in lines[1:]:

@@ -3,9 +3,10 @@ import ast, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 
-def py(d, script, *args, timeout=60):
+def py(d, script, *args, timeout=60, stderr=True):
+    """stderr=False: only what a program reading the output sees (warnings on stderr do not count)."""
     p = subprocess.run([sys.executable, script, *args], cwd=d, capture_output=True, text=True, timeout=timeout)
-    return p.returncode, p.stdout + p.stderr
+    return p.returncode, p.stdout + (p.stderr if stderr else "")
 
 
 def graded_copy(project):

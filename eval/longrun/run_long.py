@@ -5,7 +5,8 @@ junior requests plus a simulated junior (small model) that answers the assistant
 A trap counts only if stock slipped on it in an EARLIER qualify round (harness/checks/gate.py), so the two rounds
 never share runs. Each finished run is saved in eval/results/long_runs/ and reused while its project file, model,
 cap and (senior only) plugin are unchanged: a round stopped by a usage limit resumes, a plugin change reruns only
-senior. A project module (eval/longrun/projects/) gives FILES, LATER_FILES, WORLD, SCRIPT, TRAPS {check: kind},
+senior. A project module (eval/longrun/projects/) gives FILES, LATER_FILES, NEW_SESSION_AT (request that starts a fresh
+session), WORLD, SCRIPT, TRAPS {check: kind},
 rules_kept(dir) and grade(dir) -> {check: (ok, detail)}; checks not in TRAPS are no-harm guards."""
 import argparse, hashlib, importlib, json, shutil, subprocess, sys
 from pathlib import Path
@@ -84,6 +85,8 @@ def run_one(name, arm, rep, cap, model, round_):
     n = 0
     for i, msg in enumerate(project.SCRIPT):
         run.write(d, project.LATER_FILES.get(i, {}))
+        if i == project.NEW_SESSION_AT:
+            session = None  # a fresh session: only what the repo (and Senior's files) remember carries over
         if i == 0 and arm == "senior":
             msg = "/senior:senior " + msg  # how a junior starts Senior: it sets up the project harness first
         reply = send(msg, n); n += 1

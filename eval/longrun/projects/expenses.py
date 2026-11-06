@@ -14,6 +14,7 @@ FILES = {
                   "09.10.2026;-89,90;DB FERNVERKEHR\n15.10.2026;-32,75;ALDI SUED\n20.10.2026;2.400,00;GEHALT\n",
     "README.md": "# money\nmy spending stuff\n",
 }
+NEW_SESSION_AT = 2  # the junior comes back another day: the partner rule was said in an earlier session
 LATER_FILES = {4: {"bank_b.csv": "Date,Description,Amount,Type\n2026-10-11,REWE Markt GmbH,18.20,Debit\n"
                                  "2026-10-14,Zalando order,59.99,Debit\n2026-10-21,Zalando refund,59.99,Credit\n"}}
 
