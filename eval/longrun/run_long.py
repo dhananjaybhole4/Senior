@@ -8,7 +8,7 @@ cap and (senior only) plugin are unchanged: a round stopped by a usage limit res
 senior. A project module (eval/longrun/projects/) gives FILES, LATER_FILES, NEW_SESSION_AT (request that starts a fresh
 session), WORLD, SCRIPT, TRAPS {check: kind},
 rules_kept(dir) and grade(dir) -> {check: (ok, detail)}; checks not in TRAPS are no-harm guards."""
-import argparse, hashlib, importlib, json, shutil, subprocess, sys
+import argparse, hashlib, importlib, importlib.util, json, shutil, subprocess, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -145,7 +145,7 @@ def run_key(name, arm, cap, model):
 
 def grader_key(name):
     files = (PROJECTS / f"{name}.py", Path(_common.__file__))
-    return sha(b"".join(f.read_bytes() for f in files) + PY38_CHECK.encode())
+    return sha(b"".join(f.read_bytes() for f in files) + PY38_CHECK.encode() + sys.executable.encode())  # grades run pytest on this Python
 
 
 def summarize(name, runs, stock_ok):
@@ -172,6 +172,8 @@ def main():
     a.add_argument("--reps", type=int, default=REPS)
     a.add_argument("--model", default="sonnet")
     x = a.parse_args()
+    if importlib.util.find_spec("pytest") is None:  # graders run pytest on this Python; without it test checks fail falsely
+        sys.exit(f"no pytest on {sys.executable}: run with the project's .venv Python")
     arms = ["base"] if x.round == "qualify" else ["base", "senior"]
     stock_ok = {}
     if x.round == "latest":
