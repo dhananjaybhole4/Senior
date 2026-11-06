@@ -82,13 +82,15 @@ def test_round_writes_gate_format_and_reuses_runs(env, monkeypatch):
     data["projects"][0]["traps"]["kept"]["base"] = [False, True]
     (env / "q.json").write_text(json.dumps(data))
     main(monkeypatch, "latest")
+    base_calls = [c for c in map(json.loads, calls(env)[n:]) if c[c.index("--model") + 1] == "sonnet" and "--plugin-dir" not in c]
+    assert not base_calls  # stock runs of the qualify round reused
     l = json.loads((env / "l.json").read_text())
     p = l["projects"][0]
     assert l["senior_hash"] == "hash1"
     assert set(p["traps"]) == {"kept"} and set(p["guards"]) == {"easy", "later file", "runs on Python 3.8"}  # stock 2/2 -> guard
     assert set(p["tokens"]) == {"base", "senior"} and len(p["tokens"]["senior"]) == 2
-    first = [json.loads(c) for c in calls(env)[n:] if "--plugin-dir" in c and "/senior:senior first" in c]
-    assert len(first) == 2  # senior arm starts the plugin's command, once per run
+    first = [json.loads(c) for c in calls(env)[n:] if "--plugin-dir" in c and '"first"' in c]
+    assert len(first) == 2  # senior arm loads the plugin; the junior's first message is sent unchanged (hooks act alone)
     roles = json.loads((env / "long_runs" / "latest_toy_senior_r0.json").read_text())["turns"]
     assert any(t["tokens"] >= 100 for t in roles)  # role-process tokens counted on the turn that started them
 
