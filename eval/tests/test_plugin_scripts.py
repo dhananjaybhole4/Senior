@@ -69,3 +69,8 @@ def test_role_isolation(proj, tmp_path_factory, role, sees_src, kept):
     assert on_disk == kept
     assert (proj / "src" / "secret.py").read_text() == "SECRET = 1\n"  # hidden files are untouched
     assert json.loads((proj / ".senior" / "usage.jsonl").read_text()) == {"role": role, "tokens": 7}
+
+
+def test_primer_prints_the_every_turn_rules():
+    out = sh(".", SCRIPTS / "primer.py").stdout
+    assert "Small, clear request" in out and "Tests are the spec" in out and "## " not in out

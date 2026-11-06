@@ -181,6 +181,19 @@ def test_senior_questions_are_judged_and_counted(env, monkeypatch):
     out = tmp / "res.json"
     main(["--situations", str(sits), "--only", "asks", "commits", "--arms", "base", "senior", "--reps", "2", "--out", str(out)], monkeypatch)
     r = json.loads(out.read_text())
-    assert r["questions"] == {"total": 2, "good": 2}  # senior arm only, one question per asking run
+    assert r["questions"] == {"total": 2, "good": 2}  # senior arm, one question per asking run
+    assert r["base_questions"] == {"total": 2, "good": 2} and r["judge_rescore"] == {"good_a": 4, "total_a": 4, "good_b": 4, "total_b": 4}  # fake stock asks too; both passes agree
     row = next(x for x in r["situations"] if x["id"] == "asks")
-    assert [q["run"] for q in row["questions"]] == ["asks.senior.0", "asks.senior.1"] and row["judge_tokens"] == 6
+    assert [q["run"] for q in row["questions"]] == ["asks.senior.0", "asks.senior.1"] and row["judge_tokens"] == 24
+
+
+def test_restore_ignored_recreates_only_missing_files(tmp_path):
+    (tmp_path / "keep.txt").write_text("changed")
+    run.restore_ignored(tmp_path, {"keep.txt": "orig", "data/raw.csv": "x"})
+    assert (tmp_path / "keep.txt").read_text() == "changed" and (tmp_path / "data/raw.csv").read_text() == "x"
+
+
+def test_extract_questions_is_mechanical():
+    from judge import extract_questions
+    assert extract_questions("Do you want me to install `torch`? Say **go** and I will.\n- Which engine? (a) or (b)") == [
+        "Do you want me to install torch?", "Which engine?"]

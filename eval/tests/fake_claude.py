@@ -2,14 +2,15 @@
 """Stand-in for the claude CLI (no tokens). Logs its argv to $FAKE_LOG, acts on keywords in the prompt:
 COMMIT -> commits everything · ASK -> asks a question with a default (judge marks it good if 'default' in reply) · ROLE -> logs 100 role tokens · EDITTEST -> reports an Edit of tests/x.py unless directed.
 Final text: git status at start + DIRECTED (direction in message) + PLUGIN (--plugin-dir given). 16 tokens per call."""
-import json, os, subprocess, sys
+import json, re, os, subprocess, sys
 
 argv = sys.argv[1:]
 msg = argv[argv.index("-p") + 1]
 with open(os.environ["FAKE_LOG"], "a") as f:
     f.write(json.dumps(argv) + "\n")
 if msg.startswith("QUESTION-JUDGE"):  # grade: a question is good when it contains "default"
-    q = [{"q": "x?", "plan": True, "plain": True, "default": "default" in msg.lower(), "why": "fake"}]
+    n_items = len(re.findall(r"^\d+\. ", msg.split("Questions to grade")[1], re.M))
+    q = [{"n": i, "real": True, "plan": True, "plain": True, "default": "default:" in msg.lower(), "why": "fake"} for i in range(1, n_items + 1)]
     print(json.dumps({"type": "result", "result": json.dumps(q), "session_id": "j", "modelUsage": {"haiku": {"inputTokens": 3}}}))
     sys.exit(0)
 directed = "<senior-direction>" in msg
