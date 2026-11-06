@@ -40,7 +40,8 @@ def env(tmp_path, monkeypatch):
     plugin = tmp_path / "plugin"; plugin.mkdir(); (plugin / "x.md").write_text("x")
     monkeypatch.setattr(run, "PLUGIN", plugin)
     monkeypatch.setattr(run, "plugin_hash", lambda: "hash")
-    monkeypatch.setattr(run, "EVAL", tmp_path)  # runs/ go under tmp
+    monkeypatch.setattr(run, "EVAL", tmp_path)
+    monkeypatch.setattr(run, "RUNS", tmp_path / "runs")  # runs/ go under tmp
     return tmp_path, sits
 
 

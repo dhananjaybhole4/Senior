@@ -17,6 +17,7 @@ import argparse, importlib.util, json, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 EVAL = Path(__file__).resolve().parent
+RUNS = EVAL.parent / "runs"  # generated test projects + logs (gitignored), kept out of the code folders
 ROOT = EVAL.parent
 sys.path.insert(0, str(EVAL))
 sys.path.insert(0, str(ROOT / "harness" / "checks"))
@@ -207,7 +208,7 @@ def main():
         sys.exit(f"arm 'senior' needs {PLUGIN}")
     sits = load_situations(x.situations, x.only)
     senior_hash = plugin_hash() if PLUGIN.is_dir() else None
-    work = Path(tempfile.mkdtemp(prefix="senior-eval-")) if x.summary_only else EVAL / "runs" / Path(x.out).stem
+    work = Path(tempfile.mkdtemp(prefix="senior-eval-")) if x.summary_only else RUNS / Path(x.out).stem
     out = Path(x.out); partial = out.with_suffix(".partial.json")
     header = {"senior_hash": senior_hash, "model": x.model, "reps": x.reps, "arms": x.arms}
     rows = []

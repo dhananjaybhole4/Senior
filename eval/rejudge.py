@@ -12,7 +12,7 @@ EVAL = Path(__file__).resolve().parent
 
 
 def final_text(run_name):
-    logs = sorted(EVAL.glob(f"runs/*/{run_name}.log"), key=lambda f: f.stat().st_mtime)  # newest log wins (reruns)
+    logs = sorted(run.RUNS.glob(f"*/{run_name}.log"), key=lambda f: f.stat().st_mtime)  # newest log wins (reruns)
     t, _, _ = run.parse(logs[-1].read_text(), run_name)
     return t["final"] or ""
 
