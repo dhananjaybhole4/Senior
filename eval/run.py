@@ -13,7 +13,7 @@ Progress is saved to <out>.partial.json after every situation; stopping (Ctrl+C,
 --max-tokens: stop after the situation that takes the round past N tokens (all arms + history).
 --summary-only: work in a temp dir that is deleted, write no results, print totals only.
 """
-import argparse, hashlib, importlib.util, json, re, shutil, subprocess, sys, tempfile
+import argparse, hashlib, importlib.util, json, os, re, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
 EVAL = Path(__file__).resolve().parent
@@ -105,7 +105,8 @@ def claude(d, msg, model, arm=None, resume=None, fork=False):
         cmd += ["--no-session-persistence"]
     if arm == "senior":
         cmd += ["--plugin-dir", str(PLUGIN)]
-    p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=TIMEOUT_S, stdin=subprocess.DEVNULL)
+    env = {**os.environ, "ANTHROPIC_MODEL": model}  # role processes the plugin starts use the arm's model too
+    p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=TIMEOUT_S, stdin=subprocess.DEVNULL, env=env)
     return p.stdout + "\n#STDERR\n" + p.stderr
 
 

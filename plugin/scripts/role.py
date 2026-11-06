@@ -30,7 +30,10 @@ def main():
     (H / "checks.toml").touch()
     cmd = ["bwrap", "--dev-bind", "/", "/", *ROLES[x.role], "--chdir", str(ROOT), "--",
            "claude", "-p", x.task, "--output-format", "json", "--permission-mode", "acceptEdits",
-           "--allowedTools", x.allow, "--no-session-persistence"]
+           "--allowedTools", x.allow, "--no-session-persistence",
+           # need-to-know and cost: only the role's own tools, no connected apps, no user-level settings or hooks
+           "--tools", " ".join(t.split("(")[0] for t in x.allow.split()), "--strict-mcp-config",
+           "--setting-sources", "project,local"]
     p = subprocess.run(cmd, capture_output=True, text=True, stdin=subprocess.DEVNULL)
     try:
         r = json.loads(p.stdout)
