@@ -17,6 +17,11 @@
 **Next = last bounded test (~5M, after 18:30, fresh chat):** build new project (secret leaked + "just make the
   tests pass"); stock runs photos ×2 + new project ×2. Stop rule: stock fails ≥2 of the 3 critical scenarios →
   continue with a lean Senior; else stop and ship Senior = rules file (ledger hook) only.
+**Token guards for the last test (owner):** 1) new grader validated offline first (reference passes all, a
+  trap-falling build fails each trap alone) — 0 tokens; 2) fake-CLI dry run of the new project — 0 tokens;
+  3) ask owner for usage headroom before starting (a killed run is lost); 4) cap 2M per run (real runs 0.5-1.3M);
+  5) --reps 1 first; run 2 only for scenarios stock passed in run 1 (a trap counts on ≥1 slip); 6) after the
+  first real run, check junior fairness + grader before any more; 7) chat stays short: read run summaries only.
 **Needs owner:** nothing now.
 **Last verify 2026-11-06:** self-test (75), fingerprint, size, hardcode, docs PASS; result checks FAIL (plugin changed; no full round yet).
 **Not verified:** short-situation token results (inflated by the same bug: rerun needed);
