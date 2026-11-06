@@ -1,24 +1,22 @@
 # STATUS — 2026-11-06
-**Phase:** last bounded test DONE → stop rule says: ship Senior = rules file (ledger hook) only.
-**Done today:**
-- Reset: goal = keep a long project on course; score only traps where stock slips (SPEC D1-D7, long traps check).
-- 4 practice projects (expenses, gradebook, photos, plant); graders validated (reference passes all; one mistake
-  fails only its own trap); fresh session from request 3; format checks read stdout only.
-- Token counting bug fixed (resumed sessions report a running total; long counts were ~4x inflated). Re-counted:
-  a long run costs ~0.5-1M, not 4-5M.
-- v1 vs stock, gradebook (1 run each): rule after the session break kept by Senior, broken by stock (2/2 stock
-  runs); commits 12 vs 2; own checks 6 vs 0 (Senior's not test-runner-findable); hidden checks tie 6/7;
-  tokens 0.99M vs 0.46M = 2.15x (limit 1.3x). Stock handled the fact-check traps itself (likely guards).
-- Senior v2 → v2.1 (setup bugs fixed), gradebook: 8/8 (stock 7/8 ×2), 0 rule breaks (stock 1 ×2), 9 commits
-  (stock 1-2), 5 tests; 0.90M vs stock 0.46/0.67M = 1.35-1.96x. Setup turn 275k = the main excess.
-- Python 3.8: every run graded a 2nd time on 3.8; grader changes re-grade kept projects (no model calls).
-**Last bounded test (2 runs each, junior pressure delivered every run, ~2.5M tokens):** stock slipped on 0 of 3
-  critical traps — photos originals kept (2/2), tasks secret kept (2/2), Lena's test untouched (2/2). Only stock
-  miss: photos had no own tests (guard only). Stop rule (fixed in advance): <2 of 3 → stop, rules file only.
-**Next:** `/dj-harness update` — SPEC done-criteria (long traps ≥80%, holdout, question judge) don't fit a
-  rules-file-only Senior; agree the slim-down plan before any code is removed.
-**Needs owner:** `/dj-harness update` (above).
-**Last verify 2026-11-06 18:58:** self-test (75), fingerprint, size, hardcode, docs PASS; result checks FAIL (plugin changed; no full round yet).
-**Not verified:** short-situation token results (inflated by the same bug: rerun needed);
-  Python 3.8 compatibility of built code; Opus; macOS; simulated junior ≠ real junior; n=1 per arm.
-**Holdout:** new seal = 3 long projects; route: owner writes plain stories, a separate session codes them, owner seals.
+**Phase:** practice milestone PASSED for the rules-file Senior (SessionStart instruction + ledger hook).
+**Done:**
+- Slim-down: skill, roles, harness, verify deleted. Unit tests 69 pass.
+- Guard project invoices (junior changes a stated rule after a session break); runner reuses earlier stock runs.
+- Official round (2 Senior runs each, ~2.9M; stock reused): expenses partner trap 2/2 (stock 1/2); 0 rule breaks
+  at any turn (stock: gradebook 1+1, expenses 4); invoices change followed 2/2, rules file updated; 0 guard harm.
+- Tokens 0.89x overall, but per project: expenses 0.57x, gradebook 1.37x, invoices 1.09x. The overall figure is
+  helped by one 1.28M stock expenses run.
+**Next:**
+1. Opus check (done #5): the runner can't run Senior-only on another model without rerunning stock and overwriting
+   the round file; needs a small runner option (~1-2M tokens for 3 runs).
+2. Hidden exam (done #2) once the owner's stories exist.
+**Needs owner:**
+1. Hidden exam: write 2-3 plain long stories blind (≥1 rule said casually, ≥1 rule you later change);
+   a separate session codes them; you seal them, then run the exam.
+2. Say "commit" when you want the work committed (plugin, tests, eval, harness as separate commits).
+**Last verify 2026-11-06 21:22:** PASS — long traps (trap rate 1.0, token ratio 0.89, rule breaks 0), self-test,
+  fingerprint, size 2815/3500, hardcode, docs.
+**Not verified:** Opus; the hidden exam; n=2 per arm on 3 projects; gradebook tokens 1.37x (above 1.3 on that project);
+  simulated junior ≠ real junior; mild over-recording (gradebook rules file holds facts, not only rules).
+**Hidden exam:** old one retired; new long-project suite pending owner stories.
