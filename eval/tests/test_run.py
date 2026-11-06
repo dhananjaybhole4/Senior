@@ -207,7 +207,7 @@ def test_project_path_gives_no_hint(tmp_path):
 
 
 def test_long_rules_kept_sees_a_changed_header(tmp_path):
-    sys.path.insert(0, str(EVAL / "longrun"))
+    sys.path.insert(0, str(EVAL / "longrun" / "projects"))
     import expenses
     (tmp_path / "transactions.csv").write_text(expenses.HEADER + "\n")
     assert expenses.rules_kept(tmp_path)
