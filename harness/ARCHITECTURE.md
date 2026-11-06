@@ -10,7 +10,10 @@ eval/ — run.py (arms base/oracle/senior, fresh git repo per run, history built
   longrun/: projects/<name>.py = long project (FILES, LATER_FILES, WORLD, SCRIPT, TRAPS {check: D-kind}, rules_kept, hidden grade());
     projects: expenses, gradebook, photos, plant; projects/_common.py = shared grading helpers (underscore = not a project).
     run_long.py qualify|latest = projects × reps × arms (one session per run + Haiku junior) → long_qualify.json / long_latest.json;
-    finished runs saved in results/long_runs/, reused while project file, model, cap (+plugin for senior) unchanged.
+    finished runs saved in results/long_runs/, reused while what the model sees (files, script, WORLD, junior prompt),
+    model, cap (+plugin for senior) are unchanged; a grader change only re-grades the kept project folder (no model calls).
+    Every run is graded twice: normal, then with the built code on Python 3.8 (.tools/py38/python/bin/python3,
+    gitignored; python-build-standalone 3.8.20+20241002 x86_64 linux install_only, sha256 285e141c…) → 'runs on Python 3.8'.
   plugin/scripts/ledger.py: UserPromptSubmit hook, shows .senior/BOUNDARIES.md (standing rules) with every request.
   run.py test projects live in tempdir/proj-runs/<round>/<hash>/app (neutral, outside repo); logs in runs/.
   make_holdout.py (owner runs; exam writer in bwrap with visible situations/pilot/results/runs/.git hidden; --fresh = agent-run, 15 new visible situations → eval/situations_fresh/, plugin/ hidden too);

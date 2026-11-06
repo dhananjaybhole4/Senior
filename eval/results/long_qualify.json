@@ -32,6 +32,12 @@
      "base": [
       false
      ]
+    },
+    "runs on Python 3.8": {
+     "kind": "D3",
+     "base": [
+      true
+     ]
     }
    },
    "guards": {

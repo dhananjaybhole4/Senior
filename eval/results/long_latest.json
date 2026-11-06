@@ -61,6 +61,14 @@
      "senior": [
       true
      ]
+    },
+    "runs on Python 3.8": {
+     "base": [
+      true
+     ],
+     "senior": [
+      true
+     ]
     }
    },
    "rule_breaks": {
@@ -76,7 +84,7 @@
      460894
     ],
     "senior": [
-     828009
+     902668
     ]
    },
    "weighted": {
@@ -84,10 +92,10 @@
      170650
     ],
     "senior": [
-     277749
+     281623
     ]
    }
   }
  ],
- "senior_hash": "374c98fd8457f4cb55e539faebf0efbe64429c84cfdc0a51a22625cf6dac3e1c"
+ "senior_hash": "996b2e0d5f924d1cd743725e9172dc5a5e9a70c5010263967dcffff8edc7a532"
 }

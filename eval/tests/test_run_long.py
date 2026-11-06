@@ -43,6 +43,7 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(run_long, "RUNS_OUT", tmp_path / "long_runs")
     monkeypatch.setattr(run_long, "QUALIFY", tmp_path / "q.json")
     monkeypatch.setattr(run_long, "LONG", tmp_path / "l.json")
+    monkeypatch.setattr(run_long, "PY38", Path(sys.executable))
     return tmp_path
 
 
@@ -63,7 +64,7 @@ def test_latest_needs_an_earlier_qualify_round(env, monkeypatch):
 def test_round_writes_gate_format_and_reuses_runs(env, monkeypatch):
     main(monkeypatch, "qualify")
     q = json.loads((env / "q.json").read_text())["projects"][0]
-    assert set(q["traps"]) == {"kept", "easy"} and q["traps"]["kept"] == {"kind": "D6", "base": [True, True]}
+    assert set(q["traps"]) == {"kept", "easy", "runs on Python 3.8"} and q["traps"]["kept"] == {"kind": "D6", "base": [True, True]}
     assert q["guards"] == {"later file": {"base": [True, True]}}  # LATER_FILES written before request 2
     assert q["rule_breaks"]["base"] == [0, 0] and all(t > 0 for t in q["weighted"]["base"])
     turns = json.loads((env / "long_runs" / "qualify_toy_base_r0.json").read_text())["turns"]
@@ -84,7 +85,7 @@ def test_round_writes_gate_format_and_reuses_runs(env, monkeypatch):
     l = json.loads((env / "l.json").read_text())
     p = l["projects"][0]
     assert l["senior_hash"] == "hash1"
-    assert set(p["traps"]) == {"kept"} and set(p["guards"]) == {"easy", "later file"}  # stock 2/2 -> guard
+    assert set(p["traps"]) == {"kept"} and set(p["guards"]) == {"easy", "later file", "runs on Python 3.8"}  # stock 2/2 -> guard
     assert set(p["tokens"]) == {"base", "senior"} and len(p["tokens"]["senior"]) == 2
     first = [json.loads(c) for c in calls(env)[n:] if "--plugin-dir" in c and "/senior:senior first" in c]
     assert len(first) == 2  # senior arm starts the plugin's command, once per run
@@ -111,3 +112,18 @@ def test_error_turn_stops_the_run_and_saves_nothing(env, monkeypatch):
     with pytest.raises(RuntimeError, match="run invalid"):
         main(monkeypatch, "qualify")
     assert not list((env / "long_runs").glob("*.json"))
+
+
+def test_grader_change_regrades_saved_runs_without_model_calls(env, monkeypatch):
+    main(monkeypatch, "qualify")
+    n = len(calls(env))
+    (env / "projects" / "toy.py").write_text(PROJECT.replace('"easy": (True, "")', '"easy": (False, "")'))
+    monkeypatch.delitem(sys.modules, "toy")
+    main(monkeypatch, "qualify")
+    assert len(calls(env)) == n  # no new model calls
+    q = json.loads((env / "q.json").read_text())["projects"][0]
+    assert q["traps"]["easy"]["base"] == [False, False]
+    (env / "projects" / "toy.py").write_text(PROJECT.replace('SCRIPT = ["first",', 'SCRIPT = ["changed",'))
+    monkeypatch.delitem(sys.modules, "toy")
+    main(monkeypatch, "qualify")
+    assert len(calls(env)) > n  # what the model sees changed: real reruns

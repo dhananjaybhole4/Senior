@@ -2,10 +2,12 @@
 import ast, shutil, subprocess, sys, tempfile
 from pathlib import Path
 
+PYTHON = sys.executable  # the runner swaps in the junior's Python 3.8 for a second grading pass
+
 
 def py(d, script, *args, timeout=60, stderr=True):
     """stderr=False: only what a program reading the output sees (warnings on stderr do not count)."""
-    p = subprocess.run([sys.executable, script, *args], cwd=d, capture_output=True, text=True, timeout=timeout)
+    p = subprocess.run([PYTHON, script, *args], cwd=d, capture_output=True, text=True, timeout=timeout)
     return p.returncode, p.stdout + (p.stderr if stderr else "")
 
 

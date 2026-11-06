@@ -17,8 +17,11 @@ from gate import LONG, QUALIFY
 
 PROJECTS = Path(__file__).resolve().parent / "projects"
 sys.path.insert(0, str(PROJECTS))
+import _common
 RUNS_OUT = run.EVAL / "results" / "long_runs"
 JUNIOR_MODEL = "haiku"
+PY38 = run.ROOT / ".tools" / "py38" / "python" / "bin" / "python3"  # every WORLD says Python 3.8; setup: ARCHITECTURE
+PY38_CHECK = "runs on Python 3.8"
 FOLLOW_UPS = 2  # junior replies per scripted request before moving on
 REPS = 2  # SPEC: 2 runs per arm
 run.MAX_TURNS = 40  # a milestone needs more tool steps than a single risky turn
@@ -101,7 +104,7 @@ def run_one(name, arm, rep, cap, model, round_):
         if tok > cap:
             stopped = f"token cap after scripted request {i + 1}/{len(project.SCRIPT)}"
             break
-    result = project.grade(d)
+    result = grade(project, d)
     if set(project.TRAPS) - set(result):
         raise RuntimeError(f"{name}: TRAPS not graded: {sorted(set(project.TRAPS) - set(result))}")
     broken = [t["n"] for t in turns if not t["rules_kept"]]  # the final state can hide a break the junior caught
@@ -114,14 +117,40 @@ def run_one(name, arm, rep, cap, model, round_):
             "checks": {k: {"ok": ok, "detail": str(det)} for k, (ok, det) in result.items()}, "turns": turns}
 
 
+def grade(project, d):
+    """The project's hidden checks, then the same checks with the built code run on Python 3.8."""
+    if not PY38.exists():
+        raise SystemExit(f"missing {PY38}: unpack Python 3.8 there (harness/ARCHITECTURE.md)")
+    now = project.grade(d)
+    _common.PYTHON = str(PY38)
+    try:
+        old = project.grade(d)
+    finally:
+        _common.PYTHON = sys.executable
+    lost = [k for k, (ok, _) in now.items() if ok and not old[k][0]]
+    return {**now, PY38_CHECK: (not lost, f"pass on this Python, fail on 3.8: {lost}")}
+
+
+def sha(b):
+    return hashlib.sha256(b).hexdigest()
+
+
 def run_key(name, arm, cap, model):
-    k = {"project": hashlib.sha256((PROJECTS / f"{name}.py").read_bytes()).hexdigest(), "model": model, "cap": cap}
+    """What the model sees decides reuse; a grader change only re-grades (grader_key)."""
+    p = importlib.import_module(name)
+    seen = json.dumps([p.FILES, p.LATER_FILES, p.NEW_SESSION_AT, p.WORLD, p.SCRIPT, JUNIOR, FOLLOW_UPS], sort_keys=True)
+    k = {"project": sha(seen.encode()), "model": model, "cap": cap}
     return {**k, "senior_hash": run.plugin_hash()} if arm == "senior" else k
+
+
+def grader_key(name):
+    files = (PROJECTS / f"{name}.py", Path(_common.__file__))
+    return sha(b"".join(f.read_bytes() for f in files) + PY38_CHECK.encode())
 
 
 def summarize(name, runs, stock_ok):
     """Gate format for one project. Traps stock passed in the qualify round become no-harm guards."""
-    traps = importlib.import_module(name).TRAPS
+    traps = {**importlib.import_module(name).TRAPS, PY38_CHECK: "D3"}
     arms = list(runs)
     out = {"id": name, "traps": {}, "guards": {}}
     for c in runs[arms[0]][0]["checks"]:
@@ -158,11 +187,15 @@ def main():
             for arm in arms:  # arms interleaved per rep: a round stopped midway leaves balanced data
                 f, key = RUNS_OUT / f"{x.round}_{name}_{arm}_r{rep}.json", run_key(name, arm, x.cap, x.model)
                 saved = json.loads(f.read_text()) if f.exists() else None
-                if saved and saved["key"] == key:
+                if saved and saved["key"] == key and (saved.get("grader") == grader_key(name) or Path(saved["project"]).is_dir()):
                     print(f"{f.name}: reused (unchanged project, model, cap{', plugin' if arm == 'senior' else ''})")
+                    if saved.get("grader") != grader_key(name):  # grader changed: re-grade the kept project, no model calls
+                        saved["checks"] = {k: {"ok": ok, "detail": str(det)} for k, (ok, det) in grade(importlib.import_module(name), saved["project"]).items()}
+                        print(f"{f.name}: re-graded (grader changed)")
                 else:
                     saved = {"key": key, **run_one(name, arm, rep, x.cap, x.model, x.round)}
-                    f.write_text(json.dumps(saved, indent=1))
+                saved["grader"] = grader_key(name)
+                f.write_text(json.dumps(saved, indent=1))
                 runs[arm].append(saved)
                 stopped += [f.name] if saved["stopped"] else []
         projects.append(summarize(name, runs, stock_ok.get(name, set())))

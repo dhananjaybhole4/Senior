@@ -1,6 +1,6 @@
 {
  "key": {
-  "project": "d0fd4817b519290bd42d936543d8f848304c5f18879c1668ec80f9bb1d1f08df",
+  "project": "c4bb5b900a30f860f1fb9002f4d87d5a3bcb538e585a323354b9a024d0941ee7",
   "model": "sonnet",
   "cap": 6000000
  },
@@ -37,6 +37,10 @@
   "project's own tests pass": {
    "ok": false,
    "detail": "no tests ran in 0.00s"
+  },
+  "runs on Python 3.8": {
+   "ok": true,
+   "detail": "pass on this Python, fail on 3.8: []"
   }
  },
  "turns": [
@@ -131,5 +135,6 @@
    "tokens": 47803,
    "rules_kept": true
   }
- ]
+ ],
+ "grader": "8a3ff6bd16d0f4b93478b4f99c7c75b78a15dd88b307d90515deffa8a56932b9"
 }
