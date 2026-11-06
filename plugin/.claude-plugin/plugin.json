@@ -1,6 +1,6 @@
 {
   "name": "senior",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {"name": "dhananjaybhole4"},
-  "description": "Senior engineer direction for juniors on stock Claude Code: interviews you, keeps a project harness in .senior/, runs isolated roles, asks only questions that matter."
+  "description": "Keeps a project on course over many turns: records the rules you state in .senior/BOUNDARIES.md and shows them with every request."
 }

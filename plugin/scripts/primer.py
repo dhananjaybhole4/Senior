@@ -1,10 +1,5 @@
-"""SessionStart hook: print Senior's every-turn rules so they apply without the junior typing /senior.
-One source of truth: the "Rules (every turn)" section of skills/senior/SKILL.md."""
-import re
-from pathlib import Path
-
-skill = (Path(__file__).resolve().parent.parent / "skills" / "senior" / "SKILL.md").read_text()
-m = re.search(r"^## Rules \(every turn\)\n(.*?)(?=^## )", skill, re.S | re.M)
-if not m:
-    raise SystemExit("primer: 'Rules (every turn)' section not found in SKILL.md")
-print("Senior is active. Apply these rules to every request in this session:\n" + m.group(1).strip())
+"""SessionStart hook: Senior's one instruction. The junior's lasting rules go to .senior/BOUNDARIES.md,
+which ledger.py shows next to every request (the one place stock Claude slipped: rules stated turns ago)."""
+print("Standing rules: when the user states a lasting rule or fact about this project (who else reads a file, "
+      "what cannot be installed, formats, limits), add one plain line to .senior/BOUNDARIES.md (create it; max 15 "
+      "lines) in the same turn. When the user changes or lifts a rule, update or remove its line and do what they ask.")
