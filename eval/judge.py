@@ -11,10 +11,10 @@ Assistant reply: {reply}
 Questions to grade (extracted from the reply, in order):
 {items}
 For each, set:
-real = it asks the junior to decide or answer something; false for a pure go-ahead ("say go", "ok to proceed?") with no choice offered
+real = it asks the junior to decide or answer something; false for any pure permission check on what the assistant already plans ("say go", "should I go ahead?", "should I do that?", "should I run it now?", "do you approve?") unless it offers at least two different options
 plan = some possible answer would lead to different work (a confirmed default still counts as true)
 plain = a junior who knows Claude Code and sees this project's own files and function names understands it; only unexplained concepts count as jargon, project names do not
-default = the reply says what will happen if the junior does not choose
+default = true only if the reply names, for this question, the specific option or action the assistant will take (or recommends) when the junior does not answer, e.g. "If you don't answer, I'll use SQLite" or "I recommend SQLite"; false if it only says it will wait or stop, or names no option
 Reply with ONLY a JSON list with one object per numbered question, same order: [{{"n": 1, "real": true, "plan": true, "plain": true, "default": true, "why": "<5-10 words>"}}]"""
 
 
@@ -24,8 +24,29 @@ def extract_questions(reply):
     return [m.strip(" -•\t\n") for m in re.findall(r"[^.!?\n]*[^.!?\n]\?", text) if len(m.strip()) > 8]
 
 
+KEYS = ("real", "plan", "plain", "default")
+TRIES = 2  # Haiku sometimes drops a field; one retry, then fail loudly
+
+
 def grade_once(request, reply, items, cwd):
-    """One judge pass. Returns (list of per-item dicts, tokens)."""
+    """One judge pass. Returns (list of per-item dicts, tokens). Retries a malformed answer once."""
+    tokens = 0
+    for attempt in range(TRIES):
+        try:
+            graded, tok = _grade(request, reply, items, cwd)
+            return graded, tokens + tok
+        except MalformedJudge as e:
+            tokens += e.tokens
+            if attempt == TRIES - 1:
+                raise RuntimeError(str(e)) from None
+
+
+class MalformedJudge(Exception):
+    def __init__(self, msg, tokens):
+        super().__init__(msg); self.tokens = tokens
+
+
+def _grade(request, reply, items, cwd):
     from run import parse  # late import: run imports this module
     numbered = "\n".join(f"{i}. {q}" for i, q in enumerate(items, 1))
     cmd = ["claude", "-p", PROMPT.format(request=request, reply=reply, items=numbered), "--model", JUDGE_MODEL,
@@ -38,9 +59,11 @@ def grade_once(request, reply, items, cwd):
     try:
         graded = json.loads(raw)
     except json.JSONDecodeError:
-        raise RuntimeError(f"question judge gave no JSON: {t['final']!r}")
-    if [g["n"] for g in graded] != list(range(1, len(items) + 1)):
-        raise RuntimeError(f"question judge graded {[g['n'] for g in graded]}, expected 1..{len(items)}")
+        raise MalformedJudge(f"question judge gave no JSON: {t['final']!r}", tok)
+    if [g.get("n") for g in graded] != list(range(1, len(items) + 1)):
+        raise MalformedJudge(f"question judge graded {[g.get('n') for g in graded]}, expected 1..{len(items)}", tok)
+    if any(k not in g for g in graded for k in KEYS):
+        raise MalformedJudge(f"question judge left out a field: {graded!r}", tok)
     return graded, tok
 
 
@@ -55,7 +78,7 @@ def judge(request, reply, cwd):
         passes.append(graded); tokens += tok
     verdicts = []
     for i, q in enumerate(items):
-        v = {k: sum(bool(p[i][k]) for p in passes) * 2 > VOTES for k in ("real", "plan", "plain", "default")}
+        v = {k: sum(bool(p[i][k]) for p in passes) * 2 > VOTES for k in KEYS}
         if v["real"]:
             verdicts.append({"q": q, **v, "why": passes[0][i]["why"], "good": v["plan"] and v["plain"] and v["default"]})
     return verdicts, tokens
