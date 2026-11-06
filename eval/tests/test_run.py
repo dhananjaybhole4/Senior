@@ -59,12 +59,11 @@ def sid_of(c, call):  # the fake's session id = its line number in the argv log
     return f"s{c.index(call) + 1}"
 
 
-def test_parse_sums_all_models_and_falls_back_to_usage():
+def test_parse_counts_this_call_not_the_session_running_total():
     ev = lambda **r: json.dumps({"type": "result", "result": "ok", "session_id": "s", **r})
-    _, tok, sid = run.parse(ev(modelUsage={"a": {"inputTokens": 3, "outputTokens": 2}, "b": {"cacheCreationInputTokens": 5}}), "x")
-    assert (tok, sid) == (10, "s")
-    _, tok, _ = run.parse(ev(usage={"input_tokens": 1, "cache_read_input_tokens": 4}), "x")
-    assert tok == 5
+    _, tok, sid = run.parse(ev(usage={"input_tokens": 1, "cache_read_input_tokens": 4},
+                               modelUsage={"m": {"inputTokens": 900, "cacheReadInputTokens": 4}}), "x")
+    assert (tok, sid) == (5, "s")
     with pytest.raises(RuntimeError):
         run.parse("not json\n", "x")
 

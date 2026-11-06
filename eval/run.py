@@ -32,7 +32,6 @@ MAX_TURNS, TIMEOUT_S = 12, 600
 BUILTIN_TOOLS = "Read Edit Write Glob Grep Bash"  # fewer tool definitions = smaller prompt, no subagent spawns
 ALLOWED = "Read Edit Write Glob Grep Bash(git *) Bash(ls *) Bash(cat *) Bash(python -m pytest*) Bash(python3 -m pytest*)"
 TOKEN_KEYS = ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens")
-MODEL_USAGE_KEYS = ("inputTokens", "outputTokens", "cacheCreationInputTokens", "cacheReadInputTokens")
 # token weights in the same order: list-price ratios, a proxy for how much each type counts against usage limits
 WEIGHTS = (1, 5, 1.25, 0.1)
 
@@ -89,11 +88,12 @@ def parse(stdout, where):
             result = ev
     if result is None:
         raise RuntimeError(f"{where}: no result event; see its .log")
-    # modelUsage covers every model the session used (e.g. a small helper model); usage only the main one
-    if result.get("modelUsage"):
-        counts = [sum(m.get(k, 0) for m in result["modelUsage"].values()) for k in MODEL_USAGE_KEYS]
-    else:
-        counts = [result.get("usage", {}).get(k, 0) for k in TOKEN_KEYS]
+    # usage = this call only. modelUsage is a running total of the whole session (a resumed or forked session
+    # carries every earlier turn), so it cannot be summed per turn. It has never listed a second model (914 logs).
+    if len(result.get("modelUsage") or {}) > 1:
+        print(f"WARNING {where}: models {sorted(result['modelUsage'])}; only the main model's tokens are counted",
+              file=sys.stderr, flush=True)
+    counts = [result.get("usage", {}).get(k, 0) for k in TOKEN_KEYS]
     return {"tools": tools, "final": result.get("result"), "weighted": weighted(counts)}, sum(counts), result.get("session_id")
 
 

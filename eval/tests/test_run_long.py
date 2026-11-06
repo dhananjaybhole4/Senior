@@ -66,6 +66,8 @@ def test_round_writes_gate_format_and_reuses_runs(env, monkeypatch):
     assert set(q["traps"]) == {"kept", "easy"} and q["traps"]["kept"] == {"kind": "D6", "base": [True, True]}
     assert q["guards"] == {"later file": {"base": [True, True]}}  # LATER_FILES written before request 2
     assert q["rule_breaks"]["base"] == [0, 0] and all(t > 0 for t in q["weighted"]["base"])
+    turns = json.loads((env / "long_runs" / "qualify_toy_base_r0.json").read_text())["turns"]
+    assert [t["tokens"] for t in turns if "ROLE" not in t["junior"]] == [16] * (len(turns) - 1)  # per call, never the resumed session's running total
     asked = [json.loads(c) for c in calls(env)]
     asked = [c for c in asked if c[c.index("--model") + 1] == "sonnet"]
     assert all("--resume" not in c for c in asked if c[c.index("-p") + 1] == "second ROLE")  # fresh session there

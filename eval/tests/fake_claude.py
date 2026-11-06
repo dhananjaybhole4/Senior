@@ -11,7 +11,7 @@ with open(os.environ["FAKE_LOG"], "a") as f:
 if msg.startswith("QUESTION-JUDGE"):  # grade: a question is good when it contains "default"
     n_items = len(re.findall(r"^\d+\. ", msg.split("Questions to grade")[1], re.M))
     q = [{"n": i, "real": True, "plan": True, "plain": True, "default": "default:" in msg.lower(), "why": "fake"} for i in range(1, n_items + 1)]
-    print(json.dumps({"type": "result", "result": json.dumps(q), "session_id": "j", "modelUsage": {"haiku": {"inputTokens": 3}}}))
+    print(json.dumps({"type": "result", "result": json.dumps(q), "session_id": "j", "usage": {"input_tokens": 3}}))
     sys.exit(0)
 directed = "<senior-direction>" in msg
 status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True).stdout.strip()  # state at start
@@ -26,4 +26,6 @@ content = [{"type": "tool_use", "name": "Edit", "input": {"file_path": "tests/x.
 print(json.dumps({"type": "assistant", "message": {"content": content}}))
 n = sum(1 for _ in open(os.environ["FAKE_LOG"]))
 print(json.dumps({"type": "result", "result": final, "session_id": f"s{n}",
-                  "modelUsage": {"main": {"inputTokens": 10, "outputTokens": 5}, "helper": {"cacheReadInputTokens": 1}}}))
+                  "usage": {"input_tokens": 10, "output_tokens": 5, "cache_read_input_tokens": 1},
+                  # like the real CLI: a resumed session's modelUsage is a running total including earlier turns
+                  "modelUsage": {"main": {"inputTokens": 10 + 1000 * ("--resume" in argv), "outputTokens": 5}}}))
