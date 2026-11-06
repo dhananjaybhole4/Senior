@@ -90,8 +90,6 @@ def run_one(name, arm, rep, cap, model, round_):
         run.write(d, project.LATER_FILES.get(i, {}))
         if i == project.NEW_SESSION_AT:
             session = None  # a fresh session: only what the repo (and Senior's files) remember carries over
-        if i == 0 and arm == "senior":
-            msg = "/senior:senior " + msg  # how a junior starts Senior: it sets up the project harness first
         reply = send(msg, n); n += 1
         for _ in range(FOLLOW_UPS):
             if tok > cap:
@@ -189,6 +187,9 @@ def main():
             for arm in arms:  # arms interleaved per rep: a round stopped midway leaves balanced data
                 f, key = RUNS_OUT / f"{x.round}_{name}_{arm}_r{rep}.json", run_key(name, arm, x.cap, x.model)
                 saved = json.loads(f.read_text()) if f.exists() else None
+                earlier = RUNS_OUT / f"qualify_{name}_base_r{rep}.json"
+                if arm == "base" and x.round == "latest" and not (saved and saved["key"] == key) and earlier.exists():
+                    saved = json.loads(earlier.read_text())  # stock is unchanged between rounds; the trap rate reads senior runs only
                 if saved and saved["key"] == key and (saved.get("grader") == grader_key(name) or Path(saved["project"]).is_dir()):
                     print(f"{f.name}: reused (unchanged project, model, cap{', plugin' if arm == 'senior' else ''})")
                     if saved.get("grader") != grader_key(name):  # grader changed: re-grade the kept project, no model calls
