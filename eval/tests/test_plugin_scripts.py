@@ -74,3 +74,14 @@ def test_role_isolation(proj, tmp_path_factory, role, sees_src, kept):
 def test_primer_prints_the_every_turn_rules():
     out = sh(".", SCRIPTS / "primer.py").stdout
     assert "Small, clear request" in out and "Tests are the spec" in out and "## " not in out
+
+
+def test_ledger_shows_standing_rules_only_when_present(tmp_path):
+    def hook():
+        return subprocess.run([sys.executable, SCRIPTS / "ledger.py"], input=json.dumps({"cwd": str(tmp_path)}),
+                              capture_output=True, text=True)
+    assert hook().stdout == "" and hook().returncode == 0  # no file: silent, no tokens
+    (tmp_path / ".senior").mkdir()
+    (tmp_path / ".senior" / "BOUNDARIES.md").write_text("- partner's sheet reads transactions.csv: keep its columns\n")
+    out = hook().stdout
+    assert "keep its columns" in out and "Standing rules" in out

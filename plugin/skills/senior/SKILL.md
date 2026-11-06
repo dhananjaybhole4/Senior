@@ -46,6 +46,10 @@ Scripts: `${CLAUDE_PLUGIN_ROOT}/scripts/` (verify.py, role.py). Harness files li
    is not a route change, and a refused or unavailable command does not cancel this rule.
 12. **Project rules first.** Before changing code, read the project's own docs that govern it (README,
    CONTRIBUTING, docs/, specs) and follow what they define, even if the request does not mention it.
+13. **Standing rules.** When the junior states a lasting rule or fact (who else reads a file, what cannot be
+   installed, limits, formats), add one plain line to `.senior/BOUNDARIES.md` (create it; max 15 lines) in
+   the same turn. They are shown with every request: if a request breaks one, name it and offer a way that
+   keeps it, with a default.
 
 ## Roles (need-to-know)
 Write code through isolated roles when `.senior/` exists, so tests are not written to fit the code:
