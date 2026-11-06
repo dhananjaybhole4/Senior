@@ -1,12 +1,11 @@
 # STATUS — 2026-11-06
-**Phase:** M3: official round + isolation done. Gate: 2 FAIL (questions judge drift, direction).
-**Done:** M1, M2. M3 rule 11 "stuck → change route". Official round (eval/results/latest.json, 37 × 2): stock 30/37, Senior 34/37; where stock slips (5 situations) Senior 4/5 = 80%; 0 regressions; tokens 0.93x. Questions: Senior 30/37 good vs stock 20/60 (gap 48 pts), but the two judge passes differ by 6% (limit 5). Isolation (eval/isolation.py): 15/15 forbidden reads/writes blocked (5 sandbox-only + 10 real role agents, 0.86M tokens); agents did try and hit the wall (1 builder run was stopped by a permission prompt first).
-**Verify 2026-11-06:** PASS fresh, situations, regressions, tokens, isolation, self-test (.venv on PATH), fingerprint, size 3097/3500, hardcode, docs. FAIL questions (judge drift 6%), direction 1/3.
-**Findings:**
-- Direction failures (stuck_regex_html, stuck_threshold_tuning, 1/2 each): in both failed runs the runner refused a command; Senior then asked to run it instead of switching route.
-- Slip score 4/5 is fragile: one situation = 20 pts. More situations where stock slips are needed.
-- Gate hashes everything in plugin/, incl. Python cache files: any import of plugin scripts makes all results stale (fixed in isolation.py with -B).
-**Needs owner:** nothing.
-**Next:** direction (why a refused command stops the route change; fix in Senior's rules, general); judge drift (stricter rubric or third pass); more situations where stock slips; then holdout (owner).
-**Not verified:** rule 11 outside the stuck set (over-triggering); Opus; macOS. Always use .venv.
-**Holdout:** sealed 2026-11-05, runs 0
+**Phase:** M3: visible checks PASS; hidden exam FAIL (Senior 7/10, need 8; stock 6/10) → fresh visible round in progress.
+**Done:** M1, M2, M3 fixes (rule 11, judge rubric + retry, merge_arms, runs/ move, heavy_download grader). Update 2026-11-06: Q26 self-test uses .venv python; Q27 rubric + rule 11 ratified; Q28 ≤1 more exam run on this seal, then reseal 10 new; Q29 fresh round ~15 × 2 per arm, cap 8M.
+- make_holdout.py --fresh: 15 new visible situations → eval/situations_fresh/, writer blind to situations, git and plugin/ (Senior rules); unit test proves plugin/ hidden (fails when unhidden).
+- Results (eval/results/latest.json): Senior 37/37, stock 30/37; slip 5/5; 0 regressions; direction 6/6 runs; question gap 50 pts; tokens 1.00x; isolation 15/15.
+**In progress:** fresh writer (Opus) generating 15 situations.
+**Next:** validate + review each check → run both arms × 2 (cap 8M) → log first-run score in DECISIONS before any fix → general fixes only → one exam run (owner).
+**Last verify 2026-11-06 (after owner relock):** PASS all, 0 fail.
+**Needs owner:** Commit of today's work: asked, not answered.
+**Not verified:** Opus; macOS; fresh situations not yet generated or reviewed; writer may echo exam kinds (affects only the 1 remaining run on this seal); latest.json mixes 3 rounds, all on the current plugin.
+**Holdout:** sealed 2026-11-05, runs 1 (2026-11-06: Senior 7/10, stock 6/10, tokens 1.22x)
