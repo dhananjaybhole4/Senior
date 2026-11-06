@@ -1,9 +1,9 @@
 {
- "locked_at": "2026-11-06T12:01:17",
+ "locked_at": "2026-11-06T14:56:10",
  "files": {
   "harness/BOUNDARIES.md": "917cc6e762daf579ac955edc21e5e04da58a5e6c407bbc7e79a2b27d0dbd23b8",
-  "harness/SPEC.md": "6644a094da6a341f6d624b30e88ba03e10043da15163c526e134a0e0e5ab47ed",
-  "harness/checks/gate.py": "3dc9280257d9c5405833d06f50d33d97d8b6549e67d8dee5ce09715b0e084168",
-  "harness/checks.toml": "263334c32d0cbcdd982a0f2febab5239c8d7265a57a988fd93cea4e7958ec23d"
+  "harness/SPEC.md": "6818d5cda63c6d1fcf440236ca5a708ba22409285e906b2cf6cc1e4f3b9cc03d",
+  "harness/checks/gate.py": "ef7cc365f47de8d3e720ace7a203bf132f51717a453745fd9bccbecaaab82337",
+  "harness/checks.toml": "5432b7d380461ecc9c5d230fa98431b285706245bb332c4fcdde58fc06e5d8d2"
  }
 }
