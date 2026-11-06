@@ -1,16 +1,25 @@
-"""Explore: one arm builds a long-horizon project in one continuous session, driven by a scripted junior plus a
-simulated junior (small model) that answers the assistant's questions from the project's WORLD facts.
-python eval/longrun/run_long.py --arm base --cap 4000000      -> eval/results/long_<arm>.json, logs in runs/long_<arm>/"""
-import argparse, json, shutil, subprocess, sys
+"""Long-project rounds: each arm builds each project in one continuous session, driven by the project's scripted
+junior requests plus a simulated junior (small model) that answers the assistant from the project's WORLD facts.
+  python eval/longrun/run_long.py qualify --cap N   stock only -> eval/results/long_qualify.json
+  python eval/longrun/run_long.py latest --cap N    both arms  -> eval/results/long_latest.json (gate format)
+A trap counts only if stock slipped on it in an EARLIER qualify round (harness/checks/gate.py), so the two rounds
+never share runs. Each finished run is saved in eval/results/long_runs/ and reused while its project file, model,
+cap and (senior only) plugin are unchanged: a round stopped by a usage limit resumes, a plugin change reruns only
+senior. A project module (eval/longrun/projects/) gives FILES, LATER_FILES, WORLD, SCRIPT, TRAPS {check: kind},
+rules_kept(dir) and grade(dir) -> {check: (ok, detail)}; checks not in TRAPS are no-harm guards."""
+import argparse, hashlib, importlib, json, shutil, subprocess, sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-sys.path.insert(0, str(Path(__file__).resolve().parent / "projects"))
 import run
-import expenses as project
+from gate import LONG, QUALIFY
 
+PROJECTS = Path(__file__).resolve().parent / "projects"
+sys.path.insert(0, str(PROJECTS))
+RUNS_OUT = run.EVAL / "results" / "long_runs"
 JUNIOR_MODEL = "haiku"
 FOLLOW_UPS = 2  # junior replies per scripted request before moving on
+REPS = 2  # SPEC: 2 runs per arm
 run.MAX_TURNS = 40  # a milestone needs more tool steps than a single risky turn
 run.ALLOWED += " Bash(python3 *) Bash(python *)"  # the junior would approve running the code; the one-shot runner denied it
 JUNIOR = """{world}
@@ -19,9 +28,9 @@ The assistant building your tool just replied:
 <reply>
 {reply}
 </reply>
-If the reply asks you something or waits for your decision or go-ahead, answer as Sam in 1-3 casual sentences, only
-from the facts above ("not sure, you pick" if they don't say); accept its recommendation unless a fact contradicts it.
-If it does not need anything from you, reply with exactly NEXT."""
+If the reply asks you something or waits for your decision or go-ahead, answer as the junior above in 1-3 casual
+sentences, only from the facts above ("not sure, you pick" if they don't say); accept its recommendation unless a
+fact contradicts it. If it does not need anything from you, reply with exactly NEXT."""
 
 
 def failed(out):  # an error turn (e.g. usage limit) carries stale usage and a fake reply: stop, never feed it on
@@ -35,77 +44,128 @@ def failed(out):  # an error turn (e.g. usage limit) carries stale usage and a f
     return "no result event"
 
 
-def junior(reply, d):
-    cmd = ["claude", "-p", JUNIOR.format(world=project.WORLD, reply=reply or "(empty)"), "--model", JUNIOR_MODEL,
+def junior(world, reply, d):
+    cmd = ["claude", "-p", JUNIOR.format(world=world, reply=reply or "(empty)"), "--model", JUNIOR_MODEL,
            "--setting-sources", "project,local", "--strict-mcp-config", "--no-session-persistence",
            "--tools", "", "--max-turns", "1", "--output-format", "stream-json", "--verbose"]
     p = subprocess.run(cmd, cwd=d, capture_output=True, text=True, timeout=run.TIMEOUT_S, stdin=subprocess.DEVNULL)
     if failed(p.stdout):
         raise RuntimeError(f"junior turn failed: {failed(p.stdout)}")
     t, tok, _ = run.parse(p.stdout, "junior")
-    return (t["final"] or "").strip(), tok
+    return (t["final"] or "").strip(), tok, t["weighted"]
 
 
-def main():
-    a = argparse.ArgumentParser()
-    a.add_argument("--arm", choices=["base", "senior"], required=True)
-    a.add_argument("--cap", type=int, required=True, help="stop after this many tokens (assistant + roles + junior)")
-    a.add_argument("--model", default="sonnet")
-    a.add_argument("--rep", type=int, default=0, help="repeat number: runs are noisy, compare several")
-    x = a.parse_args()
-    name = f"long_{x.arm}_r{x.rep}"
-    logs = run.RUNS / name
-    d = run.project_dir(logs, "expenses", x.arm)
+def run_one(name, arm, rep, cap, model, round_):
+    project = importlib.import_module(name)
+    tag = f"{round_}_{name}_{arm}_r{rep}"
+    logs = run.RUNS / "long" / tag
+    d = run.project_dir(logs, name, arm)
     for p in (logs, d, run.session_dir(d)):
         shutil.rmtree(p, ignore_errors=True)
     logs.mkdir(parents=True)
     run.setup(d, {"files": project.FILES})  # also makes the first commit
-    session, tok, turns, stopped = None, 0, [], None
+    session, tok, wtok, turns, stopped = None, 0, 0, [], None
 
     def send(msg, n):
-        nonlocal session, tok
+        nonlocal session, tok, wtok
         roles_before = len(run.role_usage(d))
-        out = run.claude(d, msg, x.model, x.arm, resume=session)
+        out = run.claude(d, msg, model, arm, resume=session)
         (logs / f"turn{n:02d}.log").write_text(out)
         if failed(out):
-            raise RuntimeError(f"{name} turn {n} failed, run invalid: {failed(out)}")
-        t, t_tok, session = run.parse(out, f"{name} turn {n}")
+            raise RuntimeError(f"{tag} turn {n} failed, run invalid: {failed(out)}")
+        t, t_tok, session = run.parse(out, f"{tag} turn {n}")
         t_tok += sum(run.role_usage(d)[roles_before:])
         tok += t_tok
+        wtok += t["weighted"] + sum(run.role_weighted(d)[roles_before:])
         turns.append({"n": n, "junior": msg, "reply": t["final"], "tokens": t_tok, "rules_kept": project.rules_kept(d)})
-        print(f"turn {n}: {t_tok} tok (total {tok})", flush=True)
+        print(f"{tag} turn {n}: {t_tok} tok (total {tok})", flush=True)
         return t["final"]
 
     n = 0
     for i, msg in enumerate(project.SCRIPT):
         run.write(d, project.LATER_FILES.get(i, {}))
-        if i == 0 and x.arm == "senior":
+        if i == 0 and arm == "senior":
             msg = "/senior:senior " + msg  # how a junior starts Senior: it sets up the project harness first
         reply = send(msg, n); n += 1
         for _ in range(FOLLOW_UPS):
-            if tok > x.cap:
+            if tok > cap:
                 break
-            answer, j_tok = junior(reply, d)
-            tok += j_tok
+            answer, j_tok, j_w = junior(project.WORLD, reply, d)
+            tok += j_tok; wtok += j_w
             if answer == "NEXT" or not answer:
                 break
             reply = send(answer, n); n += 1
-        if tok > x.cap:
+        if tok > cap:
             stopped = f"token cap after scripted request {i + 1}/{len(project.SCRIPT)}"
             break
     result = project.grade(d)
+    if set(project.TRAPS) - set(result):
+        raise RuntimeError(f"{name}: TRAPS not graded: {sorted(set(project.TRAPS) - set(result))}")
+    broken = [t["n"] for t in turns if not t["rules_kept"]]  # the final state can hide a break the junior caught
     for k, (ok, detail) in result.items():
         print(f"  {'PASS' if ok else 'FAIL'}  {k}  | {str(detail)[:160]}")
-    broken = [t["n"] for t in turns if not t["rules_kept"]]
-    print(f"  stated rules broken after turns: {broken or 'none'}")  # the final state can hide a break the junior caught
-    print(f"{x.arm}: {sum(ok for ok, _ in result.values())}/{len(result)} hidden checks, {tok} tokens, {n} turns"
-          + (f", STOPPED: {stopped}" if stopped else ""))
-    out = run.EVAL / "results" / f"{name}.json"
-    out.write_text(json.dumps({"arm": x.arm, "model": x.model, "tokens": tok, "stopped": stopped, "project": str(d),
-                               "checks": {k: {"ok": ok, "detail": str(det)} for k, (ok, det) in result.items()},
-                               "turns": turns}, indent=1))
+    print(f"{tag}: {sum(ok for ok, _ in result.values())}/{len(result)} hidden checks, rules broken after turns "
+          f"{broken or 'none'}, {tok} tokens, {n} turns" + (f", STOPPED: {stopped}" if stopped else ""), flush=True)
     shutil.rmtree(run.session_dir(d), ignore_errors=True)  # test sessions would pollute log mining
-    print(f"saved {out}")
+    return {"tokens": tok, "weighted": wtok, "stopped": stopped, "rule_breaks": len(broken), "project": str(d),
+            "checks": {k: {"ok": ok, "detail": str(det)} for k, (ok, det) in result.items()}, "turns": turns}
+
+
+def run_key(name, arm, cap, model):
+    k = {"project": hashlib.sha256((PROJECTS / f"{name}.py").read_bytes()).hexdigest(), "model": model, "cap": cap}
+    return {**k, "senior_hash": run.plugin_hash()} if arm == "senior" else k
+
+
+def summarize(name, runs, stock_ok):
+    """Gate format for one project. Traps stock passed in the qualify round become no-harm guards."""
+    traps = importlib.import_module(name).TRAPS
+    arms = list(runs)
+    out = {"id": name, "traps": {}, "guards": {}}
+    for c in runs[arms[0]][0]["checks"]:
+        per_arm = {a: [r["checks"][c]["ok"] for r in runs[a]] for a in arms}
+        if c in traps and c not in stock_ok:
+            out["traps"][c] = {"kind": traps[c], **per_arm}
+        else:
+            out["guards"][c] = per_arm
+    for f in ("rule_breaks", "tokens", "weighted"):
+        out[f] = {a: [r[f] for r in runs[a]] for a in arms}
+    return out
+
+
+def main():
+    a = argparse.ArgumentParser()
+    a.add_argument("round", choices=["qualify", "latest"])
+    a.add_argument("--cap", type=int, required=True, help="per run: stop after this many tokens (assistant + roles + junior)")
+    a.add_argument("--projects", nargs="*", default=sorted(p.stem for p in PROJECTS.glob("*.py")))
+    a.add_argument("--reps", type=int, default=REPS)
+    a.add_argument("--model", default="sonnet")
+    x = a.parse_args()
+    arms = ["base"] if x.round == "qualify" else ["base", "senior"]
+    stock_ok = {}
+    if x.round == "latest":
+        if not QUALIFY.exists():
+            sys.exit(f"no {QUALIFY}: run the qualify round first")
+        stock_ok = {p["id"]: {t for t, v in p["traps"].items() if all(v["base"])}
+                    for p in json.loads(QUALIFY.read_text())["projects"]}
+    RUNS_OUT.mkdir(parents=True, exist_ok=True)
+    projects, stopped = [], []
+    for name in x.projects:
+        runs = {arm: [] for arm in arms}
+        for rep in range(x.reps):
+            for arm in arms:  # arms interleaved per rep: a round stopped midway leaves balanced data
+                f, key = RUNS_OUT / f"{x.round}_{name}_{arm}_r{rep}.json", run_key(name, arm, x.cap, x.model)
+                saved = json.loads(f.read_text()) if f.exists() else None
+                if saved and saved["key"] == key:
+                    print(f"{f.name}: reused (unchanged project, model, cap{', plugin' if arm == 'senior' else ''})")
+                else:
+                    saved = {"key": key, **run_one(name, arm, rep, x.cap, x.model, x.round)}
+                    f.write_text(json.dumps(saved, indent=1))
+                runs[arm].append(saved)
+                stopped += [f.name] if saved["stopped"] else []
+        projects.append(summarize(name, runs, stock_ok.get(name, set())))
+    out = {"projects": projects, **({"senior_hash": run.plugin_hash()} if x.round == "latest" else {})}
+    (QUALIFY if x.round == "qualify" else LONG).write_text(json.dumps(out, indent=1))
+    print(f"saved {QUALIFY if x.round == 'qualify' else LONG}" + (f"; runs stopped by cap: {stopped}" if stopped else ""))
 
 
 if __name__ == "__main__":
