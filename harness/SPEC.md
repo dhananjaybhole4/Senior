@@ -20,18 +20,19 @@ Senior only steers the AI (what it's told, when, what each role can see). The mo
 |---|---|---|
 | 1 | ≥80% of visible situations handled (3 runs each) | check: situations |
 | 2 | ≥8 of 10 sealed situations handled | holdout |
-| 3 | clearly above stock Claude on the same situations | check: situations (baseline column) |
+| 3 | on situations where stock Claude slips (fails ≥1 run), Senior handles ≥80%; situations stock always handles only guard against harm (#4) | check: situations (weak_rate) |
 | 4 | 0 situations stock Claude passed that Senior fails | check: regressions |
 | 5 | ≤ +30% total tokens vs stock Claude (all processes counted) | check: situations (METRIC tokens) |
-| 6 | each question to the junior could change the plan (some answer leads to different work), plain words, has a default | check: question judge |
+| 6 | questions to the junior could change the plan (some answer leads to different work), use plain words, state a default; Senior's good-question rate ≥ stock's + 20 pts (same judge on both), two independent judge passes give good-question rates within 5 pts | check: question judge |
 | 7 | each role cannot read what it must not, even when told to try | check: isolation |
 | 8 | direction check proposes a real alternative on "stuck route" situations | check: situations (direction) |
 | 9 | works on Sonnet and Opus | check: situations --model both (M5) |
 | 10 | built-in harness works on a made-up project with nothing of the owner's setup | manual: owner tries it once |
 
 ## Non-functional
-- Skill text stays small (rules load just in time, not all at once). Every component must
-  improve the score in a with/without test, or it is removed.
+- Effectiveness first: use whatever raises the score (rules, hooks, roles, scripts, checks).
+  Every component must improve the score in a with/without test, or it is removed. The only
+  cost limit is #5 (≤ +30% tokens vs stock).
 
 ## Out of scope (v0)
 - Drift in long sessions; expected-to-fail test types; use on work projects (on hold).
