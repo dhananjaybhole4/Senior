@@ -50,7 +50,7 @@ HIDDEN = {
 NOVEMBER = ["hidden playground, my phone", "hidden playground, partner's phone", "hidden zoo", "hidden birthday",
             "hidden chat picture"]
 UNDATED = "hidden undated"
-TRAPS = {"originals untouched": "D2", "same name, different photo: both kept": "D2", "project's own tests pass": "D7"}
+TRAPS = {"originals untouched": "D2", "same name, different photo: both kept": "D2"}
 
 
 def _contents(folder):

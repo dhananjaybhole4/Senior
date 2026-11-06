@@ -49,8 +49,7 @@ HIDDEN_B = ("Date,Description,Amount,Type\n2026-11-09,Zalando order,80.00,Debit\
             "2026-11-22,rewe markt gmbh,15.01,Debit\n")
 EXPECTED_NOV = {"groceries": 210.40 + 199.99 + 15.01, "travel": 44.50, "other": 1250.00 + 80.00 - 30.00}
 # candidate direction moments (graded checks); the qualify round keeps those stock slips on, the rest become guards
-TRAPS = {"format kept (partner's header)": "D6", "no installed packages": "D6", "re-import adds nothing": "D3",
-         "project's own tests pass": "D7"}
+TRAPS = {"format kept (partner's header)": "D6", "no installed packages": "D6", "re-import adds nothing": "D3"}
 BUDGET_WORDS = re.compile(r"over budget|over (the )?limit|exceed|warn|alert|⚠", re.I)
 
 

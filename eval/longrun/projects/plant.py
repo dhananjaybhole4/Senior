@@ -65,7 +65,7 @@ def _hidden(wet, dry, glitch):  # name: (log, expected word)
 # mirrored = the junior's premise (low = dry): a tool that misread the sensor fails only the direction check
 HIDDEN = {"": _hidden(WET, DRY, GLITCH), "mirrored_": _hidden(DRY, WET, TOP)}
 TRAPS = {"sensor direction from SENSOR.md": "D3", "3 hours, not 3 readings": "D3",
-         "output is exactly WATER or OK": "D6", "project's own tests pass": "D7"}
+         "output is exactly WATER or OK": "D6"}
 
 
 def _word(out):

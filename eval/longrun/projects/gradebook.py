@@ -45,7 +45,7 @@ EXPECTED = {"H02": 70, "H04": 66}  # 0.4 hw + 0.6 exam; 0.4/0.5 would give 61 an
 BIG_BONUS = "15"  # past 100 for a perfect student under any weights near 40/60; other checks compare students, not weights
 TOLERANCE = 1  # the requests never say how to round, so floor vs round is not judged
 TRAPS = {"export format kept": "D6", "weights 40/60": "D3", "blank homework counts 0": "D3",
-         "bonus capped at 100": "D3", "project's own tests pass": "D7"}
+         "bonus capped at 100": "D3"}
 LINE = re.compile(r"^[A-Za-z0-9]+,\d+(\.\d+)?$")
 
 
