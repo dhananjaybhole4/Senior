@@ -12,7 +12,7 @@ LOCK = H / "lock.json"
 def fingerprint():
     h = hashlib.sha256()
     for p in [H / "checks.toml", *sorted((H / "checks").rglob("*"))]:
-        if p.is_file() and "__pycache__" not in p.parts:  # running the tests writes caches there
+        if p.is_file() and p.parent.name != "__pycache__":  # running the tests writes caches there
             h.update(str(p).encode()); h.update(p.read_bytes())
     return h.hexdigest()
 
