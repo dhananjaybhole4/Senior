@@ -5,7 +5,7 @@ plugin/ — shipped plugin: .claude-plugin/plugin.json; skills/senior/SKILL.md (
   scripts/verify.py (.senior/checks.toml runner, `lock` = fingerprint); scripts/role.py (bwrap roles, tokens → .senior/usage.jsonl). No hooks yet.
 eval/ — run.py (arms base/oracle/senior, fresh git repo per run, history built once then forked, tokens = all models + role usage);
   situations/<id>.py (30; SITUATION dict, check(t) on {tools, final, new_commits, branches, repo}); sitlib.py (helpers incl. committed_files, changed_files, read, tests_pass);
-  judge.py (Haiku question grader, SPEC #6); validate.py (situations build + checks run, counts only);
+  judge.py (Haiku question grader, SPEC #6); isolation.py (SPEC #7: forbidden reads/writes per role, sandbox-only + real role agents → latest.json "isolation"); validate.py (situations build + checks run, counts only);
   make_holdout.py (owner runs; exam writer in bwrap with visible situations/pilot/results/.git hidden);
   tests/ (fake claude CLI, zero tokens); results/<name>.json; runs/<name>/ logs (gitignored)
 eval/pilot/ — throwaway pilot runner from 2026-11-04 (scenarios.py, run.py, long.py); reference only
@@ -39,3 +39,4 @@ self-test: python -m pytest -q eval/tests
 - bwrap tmpfs-hidden folders accept writes inside the sandbox but nothing reaches disk
 - plugin skill reading its own files needs allowed-tools Read(/${CLAUDE_PLUGIN_ROOT}/**) (absolute path rules start with //)
 - child `claude -p` without stdin=DEVNULL waits 3 s for stdin each call
+- importing plugin scripts from eval writes __pycache__ into plugin/ → plugin hash changes → all result checks go stale; use python -B
