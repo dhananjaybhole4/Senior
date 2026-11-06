@@ -44,7 +44,7 @@ why = "SPEC done #8"
 
 [[check]]
 name = "runner self-test"
-cmd = "python3 -m pytest -q eval/tests"
+cmd = ".venv/bin/python -m pytest -q eval/tests"
 why = "the test machinery itself must not be broken"
 
 [budget]                   # v0 code-size budget (plugin + eval code); agent's call, owner may change
@@ -67,5 +67,6 @@ ignore = []
 [[holdout]]                # owner-only: `harness/verify --holdout`
 suite = "main"
 cmd = "python3 eval/run.py --situations {holdout_dir} --summary-only --min-pass 8"   # SPEC done #2
+timeout = 10800            # 3 h: ~60 runs + history builds took ~1 h by estimate (default 30 min killed it)
 pass_regex = "HOLDOUT PASS"
 show_lines = 3
