@@ -10,37 +10,32 @@ trunk = "main"
 [[check]]
 name = "fresh results"
 cmd = "python3 harness/checks/gate.py fresh"
-why = "results must come from the current plugin version"
-
-[[check]]
-name = "situations"
-cmd = "python3 harness/checks/gate.py situations --min-rate 0.8 --min-weak-rate 0.8"
-why = "SPEC done #1, #3"
+why = "short and long results must come from the current plugin version"
 
 [[check]]
 name = "regressions"
 cmd = "python3 harness/checks/gate.py regressions --max-regressions 0"
-why = "SPEC done #4"
+why = "SPEC done #3 (short situations are no-harm guards)"
 
 [[check]]
 name = "tokens"
 cmd = "python3 harness/checks/gate.py tokens --max-ratio 1.3"
-why = "SPEC done #5"
+why = "SPEC done #4 (short situations)"
 
 [[check]]
 name = "questions"
 cmd = "python3 harness/checks/gate.py questions --min-gap 0.2 --max-judge-diff 0.05"
-why = "SPEC done #6 (relative to stock; judge must be self-consistent)"
+why = "SPEC done #5 (relative to stock; judge must be self-consistent)"
 
 [[check]]
 name = "isolation"
 cmd = "python3 harness/checks/gate.py isolation --min-rate 1.0"
-why = "SPEC done #7"
+why = "SPEC done #6"
 
 [[check]]
-name = "direction"
-cmd = "python3 harness/checks/gate.py direction --min-rate 0.8"
-why = "SPEC done #8"
+name = "long traps"
+cmd = "python3 harness/checks/gate.py long --min-rate 0.8 --max-rule-breaks 0 --max-regressions 0 --max-ratio 1.3"
+why = "SPEC done #1, #3, #4 (traps qualify on an earlier stock round; tokens also shown limit-weighted)"
 
 [[check]]
 name = "runner self-test"
@@ -53,10 +48,10 @@ src_dirs = ["plugin", "eval"]
 extensions = [".py", ".sh"]
 
 [hardcode]                 # Senior's text/code must not contain literals from test situations (BOUNDARIES #4, #5)
-test_dirs = ["eval/situations", "harness/checks"]
+test_dirs = ["eval/situations", "eval/situations_fresh", "eval/longrun/projects", "harness/checks"]
 src_dirs = ["plugin"]
 min_len = 6
-ignore = []
+ignore = [".senior", ".senior/checks", "print("]   # Senior's own folder name and Python built-ins: not test content
 
 [docs]
 "harness/SPEC.md" = 60
