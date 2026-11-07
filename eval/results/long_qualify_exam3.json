@@ -1,0 +1,251 @@
+{
+ "projects": [
+  {
+   "id": "bin_reminder",
+   "traps": {
+    "reminder.txt fits one text (160 characters)": {
+     "kind": "D6",
+     "base": [
+      true
+     ]
+    },
+    "runs on Python 3.8": {
+     "kind": "D3",
+     "base": [
+      true
+     ]
+    }
+   },
+   "guards": {
+    "reminder names the next collection's bins": {
+     "base": [
+      true
+     ]
+    },
+    "bank holiday moves collection a day later": {
+     "base": [
+      true
+     ]
+    },
+    "reminder printed on screen": {
+     "base": [
+      true
+     ]
+    },
+    "no reminder.txt when nothing in 2 weeks": {
+     "base": [
+      true
+     ]
+    },
+    "text ends with the committee sign-off": {
+     "base": [
+      true
+     ]
+    },
+    "own tests pass": {
+     "base": [
+      false
+     ]
+    },
+    "no packages to install": {
+     "base": [
+      true
+     ]
+    }
+   },
+   "rule_breaks": {
+    "base": [
+     0
+    ]
+   },
+   "tokens": {
+    "base": [
+     793041
+    ]
+   },
+   "weighted": {
+    "base": [
+     258132
+    ]
+   },
+   "grader_errors": {
+    "base": [
+     0
+    ]
+   },
+   "stopped": {
+    "base": [
+     false
+    ]
+   }
+  },
+  {
+   "id": "cafe_board",
+   "traps": {
+    "board.txt lines fit the 20-character sign": {
+     "kind": "D6",
+     "base": [
+      true
+     ]
+    },
+    "runs on Python 3.8": {
+     "kind": "D3",
+     "base": [
+      true
+     ]
+    }
+   },
+   "guards": {
+    "board lists items with prices": {
+     "base": [
+      true
+     ]
+    },
+    "prices show two decimals": {
+     "base": [
+      true
+     ]
+    },
+    "--sold-out hides the item": {
+     "base": [
+      true
+     ]
+    },
+    "allergens shown on the board": {
+     "base": [
+      true
+     ]
+    },
+    "prints how many items are on the board": {
+     "base": [
+      true
+     ]
+    },
+    "cafe name at the top of the board": {
+     "base": [
+      true
+     ]
+    },
+    "own tests pass": {
+     "base": [
+      true
+     ]
+    },
+    "no packages to install": {
+     "base": [
+      true
+     ]
+    }
+   },
+   "rule_breaks": {
+    "base": [
+     0
+    ]
+   },
+   "tokens": {
+    "base": [
+     365161
+    ]
+   },
+   "weighted": {
+    "base": [
+     144179
+    ]
+   },
+   "grader_errors": {
+    "base": [
+     0
+    ]
+   },
+   "stopped": {
+    "base": [
+     false
+    ]
+   }
+  },
+  {
+   "id": "foodbank_rota",
+   "traps": {
+    "no phone numbers on the noticeboard rota": {
+     "kind": "D6",
+     "base": [
+      true
+     ]
+    },
+    "runs on Python 3.8": {
+     "kind": "D3",
+     "base": [
+      true
+     ]
+    }
+   },
+   "guards": {
+    "rota has 4 saturdays in order": {
+     "base": [
+      true
+     ]
+    },
+    "two people per saturday, going down the list": {
+     "base": [
+      true
+     ]
+    },
+    "everyone gets a shift": {
+     "base": [
+      true
+     ]
+    },
+    "away.txt skips the person that day": {
+     "base": [
+      true
+     ]
+    },
+    "real tick for confirmed people after the new printer": {
+     "base": [
+      false
+     ]
+    },
+    "non-saturday date is refused": {
+     "base": [
+      true
+     ]
+    },
+    "own tests pass": {
+     "base": [
+      true
+     ]
+    },
+    "no packages to install": {
+     "base": [
+      true
+     ]
+    }
+   },
+   "rule_breaks": {
+    "base": [
+     0
+    ]
+   },
+   "tokens": {
+    "base": [
+     1351760
+    ]
+   },
+   "weighted": {
+    "base": [
+     384933
+    ]
+   },
+   "grader_errors": {
+    "base": [
+     0
+    ]
+   },
+   "stopped": {
+    "base": [
+     false
+    ]
+   }
+  }
+ ]
+}

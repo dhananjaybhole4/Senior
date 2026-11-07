@@ -1,0 +1,84 @@
+{
+ "projects": [
+  {
+   "id": "bin_reminder",
+   "traps": {
+    "reminder.txt fits one text (160 characters)": {
+     "kind": "D6",
+     "senior": [
+      true
+     ]
+    },
+    "runs on Python 3.8": {
+     "kind": "D3",
+     "senior": [
+      true
+     ]
+    }
+   },
+   "guards": {
+    "reminder names the next collection's bins": {
+     "senior": [
+      true
+     ]
+    },
+    "bank holiday moves collection a day later": {
+     "senior": [
+      true
+     ]
+    },
+    "reminder printed on screen": {
+     "senior": [
+      true
+     ]
+    },
+    "no reminder.txt when nothing in 2 weeks": {
+     "senior": [
+      true
+     ]
+    },
+    "text ends with the committee sign-off": {
+     "senior": [
+      true
+     ]
+    },
+    "own tests pass": {
+     "senior": [
+      false
+     ]
+    },
+    "no packages to install": {
+     "senior": [
+      true
+     ]
+    }
+   },
+   "rule_breaks": {
+    "senior": [
+     0
+    ]
+   },
+   "tokens": {
+    "senior": [
+     704479
+    ]
+   },
+   "weighted": {
+    "senior": [
+     250326
+    ]
+   },
+   "grader_errors": {
+    "senior": [
+     0
+    ]
+   },
+   "stopped": {
+    "senior": [
+     false
+    ]
+   }
+  }
+ ],
+ "senior_hash": "e2437ad8459be8978af1e85b7dbe5cb964c9fabf57ca2167c3a3d9882a988e29"
+}

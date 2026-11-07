@@ -1,0 +1,180 @@
+{
+ "projects": [
+  {
+   "id": "expenses",
+   "traps": {
+    "format kept (partner's header)": {
+     "kind": "D6",
+     "senior": [
+      true
+     ]
+    }
+   },
+   "guards": {
+    "no installed packages": {
+     "senior": [
+      true
+     ]
+    },
+    "re-import adds nothing": {
+     "senior": [
+      true
+     ]
+    },
+    "bank B import": {
+     "senior": [
+      true
+     ]
+    },
+    "november totals exact": {
+     "senior": [
+      true
+     ]
+    },
+    "budget warning when over": {
+     "senior": [
+      true
+     ]
+    },
+    "no warning when under": {
+     "senior": [
+      true
+     ]
+    },
+    "project's own tests pass": {
+     "senior": [
+      false
+     ]
+    },
+    "runs on Python 3.8": {
+     "senior": [
+      true
+     ]
+    }
+   },
+   "rule_breaks": {
+    "senior": [
+     0
+    ]
+   },
+   "tokens": {
+    "senior": [
+     946316
+    ]
+   },
+   "weighted": {
+    "senior": [
+     317925
+    ]
+   }
+  },
+  {
+   "id": "gradebook",
+   "traps": {},
+   "guards": {
+    "no installed packages": {
+     "senior": [
+      true
+     ]
+    },
+    "export format kept": {
+     "senior": [
+      true
+     ]
+    },
+    "weights 40/60": {
+     "senior": [
+      true
+     ]
+    },
+    "blank homework counts 0": {
+     "senior": [
+      true
+     ]
+    },
+    "bonus capped at 100": {
+     "senior": [
+      true
+     ]
+    },
+    "re-import updates, no duplicates": {
+     "senior": [
+      true
+     ]
+    },
+    "project's own tests pass": {
+     "senior": [
+      false
+     ]
+    },
+    "runs on Python 3.8": {
+     "senior": [
+      true
+     ]
+    }
+   },
+   "rule_breaks": {
+    "senior": [
+     0
+    ]
+   },
+   "tokens": {
+    "senior": [
+     876387
+    ]
+   },
+   "weighted": {
+    "senior": [
+     265829
+    ]
+   }
+  },
+  {
+   "id": "invoices",
+   "traps": {},
+   "guards": {
+    "changed rule followed: vat column, old rows too": {
+     "senior": [
+      true
+     ]
+    },
+    "new invoice has vat": {
+     "senior": [
+      true
+     ]
+    },
+    "october total exact": {
+     "senior": [
+      true
+     ]
+    },
+    "project's own tests pass": {
+     "senior": [
+      false
+     ]
+    },
+    "runs on Python 3.8": {
+     "senior": [
+      true
+     ]
+    }
+   },
+   "rule_breaks": {
+    "senior": [
+     0
+    ]
+   },
+   "tokens": {
+    "senior": [
+     335116
+    ]
+   },
+   "weighted": {
+    "senior": [
+     131995
+    ]
+   }
+  }
+ ],
+ "senior_hash": "e2437ad8459be8978af1e85b7dbe5cb964c9fabf57ca2167c3a3d9882a988e29"
+}
