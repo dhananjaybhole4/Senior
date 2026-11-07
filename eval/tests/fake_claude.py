@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Stand-in for the claude CLI (no tokens). Logs its argv to $FAKE_LOG, acts on keywords in the prompt:
-COMMIT -> commits everything · ASK -> asks a question with a default (judge marks it good if 'default' in reply) · ROLE -> logs 100 role tokens · EDITTEST -> reports an Edit of tests/x.py unless directed.
+COMMIT -> commits everything · ASK -> asks a question with a default (judge marks it good if 'default' in reply) · ROLE -> logs 100 role tokens · EDITTEST -> reports an Edit of tests/x.py unless directed · HANG -> sleeps 30 s.
 Final text: git status at start + DIRECTED (direction in message) + PLUGIN (--plugin-dir given). 16 tokens per call."""
 import json, re, os, subprocess, sys
 
@@ -14,6 +14,10 @@ if msg.startswith("QUESTION-JUDGE"):  # grade: a question is good when it contai
     print(json.dumps({"type": "result", "result": json.dumps(q), "session_id": "j", "usage": {"input_tokens": 3}}))
     sys.exit(0)
 directed = "<senior-direction>" in msg
+if "--plugin-dir" in argv and os.path.isdir(".git"):  # marks a senior-arm project (inside .git: git status unchanged)
+    open(".git/plugin-seen", "w").close()
+if "HANG" in msg:  # a call that never finishes (the runner's timeout must end only this run)
+    import time; time.sleep(30)
 status = subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True).stdout.strip()  # state at start
 if "ROLE" in msg:  # pretend the plugin started a role process that used 100 tokens
     os.makedirs(".senior", exist_ok=True)
