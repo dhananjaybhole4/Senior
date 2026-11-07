@@ -33,4 +33,9 @@ ignore = [".senior", ".senior/checks", "print("]   # Senior's own folder name an
 "harness/BOUNDARIES.md" = 25
 "harness/STATUS.md" = 30
 
-# [[holdout]] retired 2026-11-06: old seal tested the removed short-situation design; new long-project suite added when sealed (SPEC #2)
+# Hidden exam (SPEC #2): blind long projects; counts only; ~12 runs, ~6M tokens, hours (owner approved 2026-11-07)
+[[holdout]]
+suite = "main"
+cmd = ".venv/bin/python -B eval/longrun/exam.py {holdout_dir} --cap 6000000 --min-rate 0.8 --min-projects 2"
+timeout = 43200
+show_lines = 2

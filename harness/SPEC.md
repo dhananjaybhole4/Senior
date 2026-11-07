@@ -1,5 +1,5 @@
 # SPEC — senior
-_Approved by owner: 2026-11-04; long-project update 2026-11-06; rules-file slim-down 2026-11-06. Changes need owner approval._
+_Approved by owner: 2026-11-04; long-project update 2026-11-06; rules-file slim-down 2026-11-06; done #2 reworded after the blind exam 2026-11-07. Changes need owner approval._
 
 ## Goal
 `/senior`: a Claude Code plugin that keeps a junior's project on course over many turns on stock
@@ -29,7 +29,7 @@ Nothing else (no roles, harness, verify, init/run). Anything added later must wi
 | # | Criterion | Checked by |
 |---|---|---|
 | 1 | long projects: on traps where stock slipped (earlier stock round), Senior handles ≥80% (2 runs each); 0 stated-rule breaks at any turn | check: long traps |
-| 2 | sealed long projects written blind (≥1 rule stated casually, ≥1 rule lifted by the junior): #1 and #3 hold on ≥2 of 3 | holdout |
+| 2 | long projects written blind (≥1 rule stated casually, ≥1 rule lifted by the junior): 0 rule breaks and no harm (#3); benefit not shown, stock slipped on 0 traps there (2026-11-07) | manual: done 2026-11-07, eval/results/long_qualify_exam3.json + long_latest_sonnet.json |
 | 3 | no harm: 0 long-project guards stock passes and Senior fails, incl. the lifted-rule guard | check: long traps |
 | 4 | ≤ +30% total tokens vs stock (all processes counted) | check: long traps |
 | 5 | works on Opus (1 run per practice project) | manual: agent runs it, owner reads the result |
