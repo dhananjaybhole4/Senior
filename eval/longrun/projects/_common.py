@@ -7,7 +7,10 @@ PYTHON = sys.executable  # the runner swaps in the junior's Python 3.8 for a sec
 
 def py(d, script, *args, timeout=60, stderr=True):
     """stderr=False: only what a program reading the output sees (warnings on stderr do not count)."""
-    p = subprocess.run([PYTHON, script, *args], cwd=d, capture_output=True, text=True, timeout=timeout)
+    try:  # no input: a program waiting for typed input fails instead of hanging the grader
+        p = subprocess.run([PYTHON, script, *args], cwd=d, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    except subprocess.TimeoutExpired:
+        return -1, f"timed out after {timeout}s"
     return p.returncode, p.stdout + (p.stderr if stderr else "")
 
 
@@ -38,6 +41,9 @@ def third_party(d):
 def own_tests(project):
     """(ok, detail): the project's own tests pass; at least one test ran somewhere."""
     where = ["."] + [".senior/checks"] * (Path(project) / ".senior" / "checks").is_dir()  # pytest skips dot folders
-    runs = [subprocess.run([sys.executable, "-m", "pytest", "-q", w], cwd=project, capture_output=True, text=True, timeout=120) for w in where]
+    try:
+        runs = [subprocess.run([sys.executable, "-m", "pytest", "-q", w], cwd=project, capture_output=True, text=True, timeout=120, stdin=subprocess.DEVNULL) for w in where]
+    except subprocess.TimeoutExpired:
+        return False, "own tests timed out after 120s"
     lasts = [t.stdout.strip().splitlines()[-1] if t.stdout.strip() else t.stderr[-120:] for t in runs]
     return all(t.returncode in (0, 5) for t in runs) and any(t.returncode == 0 for t in runs), " | ".join(lasts)  # 5 = none found

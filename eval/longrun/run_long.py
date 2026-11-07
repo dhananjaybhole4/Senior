@@ -2,6 +2,8 @@
 junior requests plus a simulated junior (small model) that answers the assistant from the project's WORLD facts.
   python eval/longrun/run_long.py qualify --cap N   stock only -> eval/results/long_qualify.json
   python eval/longrun/run_long.py latest --cap N    both arms  -> eval/results/long_latest.json (gate format)
+  python eval/longrun/run_long.py latest --cap N --senior-only --model M   senior on another model, own run files
+                                                    -> eval/results/long_latest_M.json (official round untouched)
 A trap counts only if stock slipped on it in an EARLIER qualify round (harness/checks/gate.py), so the two rounds
 never share runs. Each finished run is saved in eval/results/long_runs/ and reused while its project file, model,
 cap and (senior only) plugin are unchanged: a round stopped by a usage limit resumes, a plugin change reruns only
@@ -68,7 +70,7 @@ def run_one(name, arm, rep, cap, model, round_):
         shutil.rmtree(p, ignore_errors=True)
     logs.mkdir(parents=True)
     run.setup(d, {"files": project.FILES})  # also makes the first commit
-    session, tok, wtok, turns, stopped = None, 0, 0, [], None
+    session, tok, wtok, turns, stopped, errors = None, 0, 0, [], None, []
 
     def send(msg, n):
         nonlocal session, tok, wtok
@@ -81,38 +83,51 @@ def run_one(name, arm, rep, cap, model, round_):
         t_tok += sum(run.role_usage(d)[roles_before:])
         tok += t_tok
         wtok += t["weighted"] + sum(run.role_weighted(d)[roles_before:])
-        turns.append({"n": n, "junior": msg, "reply": t["final"], "tokens": t_tok, "rules_kept": project.rules_kept(d)})
+        turns.append({"n": n, "junior": msg, "reply": t["final"], "tokens": t_tok, "rules_kept": contained(project.rules_kept, d, errors)})
         print(f"{tag} turn {n}: {t_tok} tok (total {tok})", flush=True)
         return t["final"]
 
     n = 0
-    for i, msg in enumerate(project.SCRIPT):
-        run.write(d, project.LATER_FILES.get(i, {}))
-        if i == project.NEW_SESSION_AT:
-            session = None  # a fresh session: only what the repo (and Senior's files) remember carries over
-        reply = send(msg, n); n += 1
-        for _ in range(FOLLOW_UPS):
+    try:
+        for i, msg in enumerate(project.SCRIPT):
+            run.write(d, project.LATER_FILES.get(i, {}))
+            if i == project.NEW_SESSION_AT:
+                session = None  # a fresh session: only what the repo (and Senior's files) remember carries over
+            reply = send(msg, n); n += 1
+            for _ in range(FOLLOW_UPS):
+                if tok > cap:
+                    break
+                answer, j_tok, j_w = junior(project.WORLD, reply, d)
+                tok += j_tok; wtok += j_w
+                if answer == "NEXT" or not answer:
+                    break
+                reply = send(answer, n); n += 1
             if tok > cap:
+                stopped = f"token cap after scripted request {i + 1}/{len(project.SCRIPT)}"
                 break
-            answer, j_tok, j_w = junior(project.WORLD, reply, d)
-            tok += j_tok; wtok += j_w
-            if answer == "NEXT" or not answer:
-                break
-            reply = send(answer, n); n += 1
-        if tok > cap:
-            stopped = f"token cap after scripted request {i + 1}/{len(project.SCRIPT)}"
-            break
-    result = grade(project, d)
+    except subprocess.TimeoutExpired as e:  # a hung call ends this run only; the timed-out call's tokens are unknown
+        stopped = f"call timed out after {e.timeout:.0f}s at turn {n}"
+    result = contained(lambda d: grade(project, d), d, errors) or {}
     if set(project.TRAPS) - set(result):
-        raise RuntimeError(f"{name}: TRAPS not graded: {sorted(set(project.TRAPS) - set(result))}")
+        errors.append(f"TRAPS not graded: {sorted(set(project.TRAPS) - set(result))}")
+        result = {**{k: (False, "not graded") for k in project.TRAPS}, **result}
     broken = [t["n"] for t in turns if not t["rules_kept"]]  # the final state can hide a break the junior caught
     for k, (ok, detail) in result.items():
         print(f"  {'PASS' if ok else 'FAIL'}  {k}  | {str(detail)[:160]}")
     print(f"{tag}: {sum(ok for ok, _ in result.values())}/{len(result)} hidden checks, rules broken after turns "
           f"{broken or 'none'}, {tok} tokens, {n} turns" + (f", STOPPED: {stopped}" if stopped else ""), flush=True)
     shutil.rmtree(run.session_dir(d), ignore_errors=True)  # test sessions would pollute log mining
-    return {"tokens": tok, "weighted": wtok, "stopped": stopped, "rule_breaks": len(broken), "project": str(d),
+    return {"tokens": tok, "weighted": wtok, "stopped": stopped, "rule_breaks": len(broken), "project": str(d), "grader_errors": errors,
             "checks": {k: {"ok": ok, "detail": str(det)} for k, (ok, det) in result.items()}, "turns": turns}
+
+
+def contained(fn, d, errors):
+    """A grader that crashes or hangs on this run's state fails it (False), is recorded, and never stops the round."""
+    try:
+        return fn(d)
+    except Exception as e:
+        errors.append(f"{getattr(fn, '__name__', 'grade')}: {type(e).__name__}: {e}"[:300])
+        return False
 
 
 def grade(project, d):
@@ -151,14 +166,16 @@ def summarize(name, runs, stock_ok):
     traps = {**importlib.import_module(name).TRAPS, PY38_CHECK: "D3"}
     arms = list(runs)
     out = {"id": name, "traps": {}, "guards": {}}
-    for c in runs[arms[0]][0]["checks"]:
-        per_arm = {a: [r["checks"][c]["ok"] for r in runs[a]] for a in arms}
+    for c in dict.fromkeys(c for a in arms for r in runs[a] for c in r["checks"]):  # a crashed grader leaves checks out
+        per_arm = {a: [r["checks"].get(c, {"ok": False})["ok"] for r in runs[a]] for a in arms}
         if c in traps and c not in stock_ok:
             out["traps"][c] = {"kind": traps[c], **per_arm}
         else:
             out["guards"][c] = per_arm
     for f in ("rule_breaks", "tokens", "weighted"):
         out[f] = {a: [r[f] for r in runs[a]] for a in arms}
+    out["grader_errors"] = {a: [len(r.get("grader_errors", [])) for r in runs[a]] for a in arms}
+    out["stopped"] = {a: [bool(r["stopped"]) for r in runs[a]] for a in arms}
     return out
 
 
@@ -169,10 +186,15 @@ def main():
     a.add_argument("--projects", nargs="*", default=sorted(p.stem for p in PROJECTS.glob("[!_]*.py")))
     a.add_argument("--reps", type=int, default=REPS)
     a.add_argument("--model", default="sonnet")
+    a.add_argument("--senior-only", action="store_true", help="latest round, senior arm only (e.g. another model)")
     x = a.parse_args()
+    if x.senior_only and x.round != "latest":
+        sys.exit("--senior-only needs the latest round")
     if importlib.util.find_spec("pytest") is None:  # graders run pytest on this Python; without it test checks fail falsely
         sys.exit(f"no pytest on {sys.executable}: run with the project's .venv Python")
-    arms = ["base"] if x.round == "qualify" else ["base", "senior"]
+    arms = ["base"] if x.round == "qualify" else ["senior"] if x.senior_only else ["base", "senior"]
+    tag = f"{x.round}-{x.model}" if x.senior_only else x.round  # own run files and project folders: never overwrite the official round
+    out_file = LONG.with_name(f"{LONG.stem}_{x.model}.json") if x.senior_only else QUALIFY if x.round == "qualify" else LONG
     stock_ok = {}
     if x.round == "latest":
         if not QUALIFY.exists():
@@ -185,7 +207,7 @@ def main():
         runs = {arm: [] for arm in arms}
         for rep in range(x.reps):
             for arm in arms:  # arms interleaved per rep: a round stopped midway leaves balanced data
-                f, key = RUNS_OUT / f"{x.round}_{name}_{arm}_r{rep}.json", run_key(name, arm, x.cap, x.model)
+                f, key = RUNS_OUT / f"{tag}_{name}_{arm}_r{rep}.json", run_key(name, arm, x.cap, x.model)
                 saved = json.loads(f.read_text()) if f.exists() else None
                 earlier = RUNS_OUT / f"qualify_{name}_base_r{rep}.json"
                 if arm == "base" and x.round == "latest" and not (saved and saved["key"] == key) and earlier.exists():
@@ -196,15 +218,15 @@ def main():
                         saved["checks"] = {k: {"ok": ok, "detail": str(det)} for k, (ok, det) in grade(importlib.import_module(name), saved["project"]).items()}
                         print(f"{f.name}: re-graded (grader changed)")
                 else:
-                    saved = {"key": key, **run_one(name, arm, rep, x.cap, x.model, x.round)}
+                    saved = {"key": key, **run_one(name, arm, rep, x.cap, x.model, tag)}
                 saved["grader"] = grader_key(name)
                 f.write_text(json.dumps(saved, indent=1))
                 runs[arm].append(saved)
                 stopped += [f.name] if saved["stopped"] else []
         projects.append(summarize(name, runs, stock_ok.get(name, set())))
     out = {"projects": projects, **({"senior_hash": run.plugin_hash()} if x.round == "latest" else {})}
-    (QUALIFY if x.round == "qualify" else LONG).write_text(json.dumps(out, indent=1))
-    print(f"saved {QUALIFY if x.round == 'qualify' else LONG}" + (f"; runs stopped by cap: {stopped}" if stopped else ""))
+    out_file.write_text(json.dumps(out, indent=1))
+    print(f"saved {out_file}" + (f"; runs stopped by cap: {stopped}" if stopped else ""))
 
 
 if __name__ == "__main__":
