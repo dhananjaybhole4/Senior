@@ -9,14 +9,19 @@ eval/ — run.py (arms base/oracle/senior, fresh git repo per run, history built
   judge.py (Haiku question grader, SPEC #6); validate.py (situations build + checks run, counts only); rejudge.py (re-grade saved replies);
   merge_arms.py (Senior-only round + stock rows of an earlier round → one result file; isolation carried over);
   longrun/: projects/<name>.py = long project (FILES, LATER_FILES, WORLD, SCRIPT, TRAPS {check: D-kind}, rules_kept, hidden grade());
-    projects: expenses, gradebook, invoices (guard only: junior changes a stated rule), photos, plant, tasks; projects/_common.py = shared grading helpers (underscore = not a project).
+    projects: expenses, gradebook, invoices (guard only: junior changes a stated rule), photos, plant, tasks;
+      bin_reminder, cafe_board, foodbank_rota (retired blind exam 2026-11-07, written by the blind writer); projects/_common.py = shared grading helpers (underscore = not a project).
     run_long.py qualify|latest = projects × reps × arms (one session per run + Haiku junior) → long_qualify.json / long_latest.json;
     latest reuses qualify_<p>_base_r<n> stock runs when their key matches (stock is unchanged between rounds);
+    latest --senior-only --model M = senior arm only on model M → latest-M_* run files + long_latest_M.json;
+    exam.py DIR = hidden exam (holdout cmd): qualify + latest on sealed projects, everything in a deleted neutral
+    temp folder, prints counts only; holds only with ≥1 stock-slipped trap; 0-token preflight first; grader crash/hang or hung call = that run fails/stops (counted), never the exam.
     finished runs saved in results/long_runs/, reused while what the model sees (files, script, WORLD, junior prompt),
     model, cap (+plugin for senior) are unchanged; a grader change only re-grades the kept project folder (no model calls).
     Every run is graded twice: normal, then with the built code on Python 3.8 (.tools/py38/python/bin/python3,
     gitignored; python-build-standalone 3.8.20+20241002 x86_64 linux install_only, sha256 285e141c…) → 'runs on Python 3.8'.
   run.py test projects live in tempdir/proj-runs/<round>/<hash>/app (neutral, outside repo); logs in runs/.
+  make_holdout.py --long (agent may run: 3 blind long projects → staging, writer can't see visible projects/notes/plugin/old runs/transcripts);
   make_holdout.py (owner runs; exam writer in bwrap with visible situations/pilot/results/runs/.git hidden; --fresh = agent-run, 15 new visible situations → eval/situations_fresh/, plugin/ hidden too);
   tests/ (fake claude CLI, zero tokens); results/<name>.json
 runs/ — generated test projects + logs per round (repo root, gitignored; outside the code-size count)

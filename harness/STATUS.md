@@ -1,22 +1,20 @@
-# STATUS — 2026-11-06
-**Phase:** practice milestone PASSED for the rules-file Senior (SessionStart instruction + ledger hook).
+# STATUS — 2026-11-07
+**Phase:** v0 DONE (SessionStart instruction + ledger hook); benefit on blind projects not shown.
 **Done:**
-- Slim-down: skill, roles, harness, verify deleted. Unit tests 69 pass.
-- Guard project invoices (junior changes a stated rule after a session break); runner reuses earlier stock runs.
-- Official round (2 Senior runs each, ~2.9M; stock reused): expenses partner trap 2/2 (stock 1/2); 0 rule breaks
-  at any turn (stock: gradebook 1+1, expenses 4); invoices change followed 2/2, rules file updated; 0 guard harm.
-- Tokens 0.89x overall, but per project: expenses 0.57x, gradebook 1.37x, invoices 1.09x. The overall figure is
-  helped by one 1.28M stock expenses run.
-**Next:**
-1. Opus check (done #5): the runner can't run Senior-only on another model without rerunning stock and overwriting
-   the round file; needs a small runner option (~1-2M tokens for 3 runs).
-2. Hidden exam (done #2) once the owner's stories exist.
-**Needs owner:**
-1. Hidden exam: write 2-3 plain long stories blind (≥1 rule said casually, ≥1 rule you later change);
-   a separate session codes them; you seal them, then run the exam.
-2. Say "commit" when you want the work committed (plugin, tests, eval, harness as separate commits).
-**Last verify 2026-11-06 21:22:** PASS — long traps (trap rate 1.0, token ratio 0.89, rule breaks 0), self-test,
-  fingerprint, size 2815/3500, hardcode, docs.
-**Not verified:** Opus; the hidden exam; n=2 per arm on 3 projects; gradebook tokens 1.37x (above 1.3 on that project);
-  simulated junior ≠ real junior; mild over-recording (gradebook rules file holds facts, not only rules).
-**Hidden exam:** old one retired; new long-project suite pending owner stories.
+- Official round (visible, 2 runs each): expenses partner trap 2/2 (stock 1/2); 0 rule breaks (stock gradebook 1+1,
+  expenses 4); invoices changed rule followed 2/2; 0 harm. Tokens 0.89x (expenses 0.57x, gradebook 1.37x, invoices 1.09x).
+- Opus (done #5, 1 run each, 2.16M): trap kept, 0 rule breaks, changed rule followed, no harm; agent judged met, owner ok.
+- Hidden exam (blind writer, 3 projects): 0/1 FAIL (Q1 b). Retired into visible bin_reminder, cafe_board, foodbank_rota.
+- Study (1 run each): exam's missed trap most likely a grader bug (hidden tips.csv overwrote a file the junior agreed
+  to change → crash; fixed, re-graded 8/9). Stock vs Senior there: stock slipped on 0 traps; 0 rule breaks both;
+  Senior followed the lifted rule where stock didn't (foodbank), 1 failing own test where stock didn't (cafe);
+  tokens 0.83x. No plugin change needed. Spent today: study 2.09M + stock 2.51M.
+- Exam runner hardened: preflight (0 tokens), grader crash/hang or hung call fails only that run, counts only.
+**Decided:** Q3 b — v0 accepted, SPEC done #2 reworded (owner). All done-criteria met or explicitly "not shown".
+**Next:** real use on an owner project (not work). Code size 98% of budget: trim old short-test machinery only if needed.
+**Needs owner:** re-sign the rulebook in your terminal (verify, lock option: SPEC changed). Say "commit" to commit (~20 files).
+**Last verify 2026-11-07:** PASS — long traps (rate 1.0, ratio 0.89, breaks 0), self-test 78, fingerprint, size
+  3423/3500 (98%), hardcode, docs.
+**Not verified:** benefit on blind projects (0 slips to fix); n=1 on the 3 former exam projects; Opus vs Opus stock;
+  gradebook tokens 1.37x; simulated junior ≠ real junior; mild over-recording (rules files hold facts too).
+**Hidden exam:** retired (now visible); vault suite spent, next seal replaces it.
